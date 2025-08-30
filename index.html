@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Notion Personal - Gestión Financiera</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-coins"></i> Mi Notion</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>General</h3>
+                    <ul>
+                        <li class="nav-item active" data-page="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Finanzas</h3>
+                    <ul>
+                        <li class="nav-item" data-page="deudas">
+                            <i class="fas fa-credit-card"></i>
+                            Mis Deudas
+                        </li>
+                        <li class="nav-item" data-page="medeben">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Me Deben
+                        </li>
+                        <li class="nav-item" data-page="tareas">
+                            <i class="fas fa-tasks"></i>
+                            Tablero de Tareas
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Estudios</h3>
+                    <ul>
+                        <li class="nav-item" data-page="universidad">
+                            <i class="fas fa-graduation-cap"></i>
+                            Universidad
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Herramientas</h3>
+                    <ul>
+                        <li class="nav-item" data-page="configuracion">
+                            <i class="fas fa-cog"></i>
+                            Configuración
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn-new-page">
+                    <i class="fas fa-plus"></i>
+                    Nueva página
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard" style="display: block;">
+                <header class="page-header">
+                    <h1>Dashboard</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualizar
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Resumen financiero -->
+                <div class="dashboard-summary">
+                    <div class="card summary-card negative">
+                        <div class="card-header">
+                            <h3><i class="fas fa-credit-card"></i> Total Deudas</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="amount-large negative" id="dashboardTotalDeudas">€0.00</div>
+                            <small id="dashboardContadorDeudas">0 deudas activas</small>
+                        </div>
+                    </div>
+                    
+                    <div class="card summary-card positive">
+                        <div class="card-header">
+                            <h3><i class="fas fa-hand-holding-usd"></i> Total a Cobrar</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="amount-large positive" id="dashboardTotalMeDeben">€0.00</div>
+                            <small id="dashboardContadorMeDeben">0 pendientes de cobro</small>
+                        </div>
+                    </div>
+                    
+                    <div class="card summary-card balance">
+                        <div class="card-header">
+                            <h3><i class="fas fa-balance-scale"></i> Balance Neto</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="amount-large" id="dashboardBalanceNeto">€0.00</div>
+                            <small id="dashboardEstadoBalance">Estado financiero</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tareas próximas -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-clock"></i> Tareas Próximas</h2>
+                        <button class="btn btn-link" onclick="document.querySelector('[data-page=tareas]').click()">
+                            Ver todas <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="dashboard-tasks" id="dashboardTareas">
+                        <!-- Las tareas próximas se cargarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Próximos vencimientos -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Próximos Vencimientos</h2>
+                        <button class="btn btn-link" onclick="document.querySelector('[data-page=deudas]').click()">
+                            Ver todas <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="dashboard-vencimientos" id="dashboardVencimientos">
+                        <!-- Los próximos vencimientos se cargarán aquí -->
+                    </div>
+                </div>
+
+                <!-- Actividad reciente -->
+                <div class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-history"></i> Resumen por Categorías</h2>
+                    </div>
+                    <div class="dashboard-categories">
+                        <div class="categories-section">
+                            <h3>Categorías de Deudas</h3>
+                            <div id="dashboardCategoriasDeudas">
+                                <!-- Categorías de deudas -->
+                            </div>
+                        </div>
+                        <div class="categories-section">
+                            <h3>Categorías de Ingresos</h3>
+                            <div id="dashboardCategoriasMeDeben">
+                                <!-- Categorías de me deben -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mis Deudas Page -->
+            <div class="page" id="deudas" style="display: none;">
+                <header class="page-header">
+                    <h1>Mis Deudas</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="openModal('categoriaDeudaModal')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Categoría
+                        </button>
+                        <button class="btn btn-primary" onclick="openModal('deudaModal')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Deuda
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Resumen de deudas -->
+                <div class="deudas-summary">
+                    <div class="card summary-total">
+                        <h3><i class="fas fa-calculator"></i> Total a Pagar</h3>
+                        <div class="amount negative large" id="totalDeudas">€0.00</div>
+                        <small>Solo deudas que cuentan para el total</small>
+                    </div>
+                    <div class="card summary-info">
+                        <h3><i class="fas fa-list"></i> Total de Deudas</h3>
+                        <div class="count" id="totalCategorias">0 categorías</div>
+                        <small id="totalItems">0 elementos</small>
+                    </div>
+                </div>
+
+                <!-- Categorías de deudas -->
+                <div class="categorias-container" id="categoriasContainer">
+                    <!-- Las categorías se renderizan aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Me Deben Page -->
+            <div class="page" id="medeben" style="display: none;">
+                <header class="page-header">
+                    <h1>Me Deben</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="openModal('categoriaMeDebenModal')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Categoría
+                        </button>
+                        <button class="btn btn-primary" onclick="openModal('meDebenModal')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Deuda
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Resumen de lo que me deben -->
+                <div class="deudas-summary">
+                    <div class="card summary-total" style="background: linear-gradient(135deg, #4CAF50 0%, #45A049 100%);">
+                        <h3><i class="fas fa-money-bill-wave"></i> Total a Cobrar</h3>
+                        <div class="amount positive large" id="totalMeDeben">€0.00</div>
+                        <small>Solo deudas que cuentan para el total</small>
+                    </div>
+                    <div class="card summary-info">
+                        <h3><i class="fas fa-list"></i> Total Me Deben</h3>
+                        <div class="count" id="totalCategoriasMeDeben">0 categorías</div>
+                        <small id="totalItemsMeDeben">0 elementos</small>
+                    </div>
+                </div>
+
+                <!-- Categorías de lo que me deben -->
+                <div class="categorias-container" id="categoriasMeDebenContainer">
+                    <!-- Las categorías se renderizan aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Tablero de Tareas -->
+            <div class="page" id="tareas" style="display: none;">
+                <header class="page-header">
+                    <h1>Tablero de Tareas</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="openModal('columnaModal')">
+                            <i class="fas fa-columns"></i>
+                            Nueva Columna
+                        </button>
+                        <button class="btn btn-primary" onclick="openModal('tareaModal')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Tarea
+                        </button>
+                    </div>
+                </header>
+
+                <div class="kanban-board" id="kanbanBoard">
+                    <!-- Las columnas se renderizan aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Universidad -->
+            <div class="page" id="universidad" style="display: none;">
+                <header class="page-header">
+                    <h1>Universidad - Ingeniería Informática</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="openModal('asignaturaModal')">
+                            <i class="fas fa-book"></i>
+                            Nueva Asignatura
+                        </button>
+                        <button class="btn btn-secondary" onclick="openModal('examenModal')">
+                            <i class="fas fa-file-alt"></i>
+                            Nuevo Examen
+                        </button>
+                        <button class="btn btn-primary" onclick="openModal('horarioModal')">
+                            <i class="fas fa-calendar-alt"></i>
+                            Gestionar Horario
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Pestañas de Universidad -->
+                <div class="universidad-tabs">
+                    <button class="tab-btn active" onclick="mostrarTabUniversidad('horario')">
+                        <i class="fas fa-calendar-week"></i>
+                        Horario
+                    </button>
+                    <button class="tab-btn" onclick="mostrarTabUniversidad('asignaturas')">
+                        <i class="fas fa-books"></i>
+                        Asignaturas
+                    </button>
+                    <button class="tab-btn" onclick="mostrarTabUniversidad('examenes')">
+                        <i class="fas fa-graduation-cap"></i>
+                        Exámenes
+                    </button>
+                    <button class="tab-btn" onclick="mostrarTabUniversidad('notas')">
+                        <i class="fas fa-chart-line"></i>
+                        Notas
+                    </button>
+                </div>
+
+                <!-- Tab de Horario -->
+                <div class="universidad-tab-content" id="horarioTab">
+                    <div class="horario-container">
+                        <div class="horario-header">
+                            <h3>Mi Horario Semanal</h3>
+                            <div class="horario-actions">
+                                <input type="file" id="horarioImageUpload" accept="image/*" style="display: none;" onchange="cargarImagenHorario(event)">
+                                <button class="btn btn-secondary" onclick="document.getElementById('horarioImageUpload').click()">
+                                    <i class="fas fa-image"></i>
+                                    Subir Imagen del Horario
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Imagen del horario -->
+                        <div class="horario-imagen-container" id="horarioImagenContainer">
+                            <div class="horario-placeholder">
+                                <i class="fas fa-calendar-plus"></i>
+                                <h4>Sube una imagen de tu horario</h4>
+                                <p>Haz clic en "Subir Imagen del Horario" para añadir tu horario universitario</p>
+                            </div>
+                        </div>
+
+                        <!-- Horario en tabla (alternativo/complementario) -->
+                        <div class="horario-tabla">
+                            <h4>Horario Semanal - Detalle</h4>
+                            <div class="tabla-horario" id="tablaHorario">
+                                <!-- Se genera dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Asignaturas -->
+                <div class="universidad-tab-content" id="asignaturasTab" style="display: none;">
+                    <div class="asignaturas-grid" id="asignaturasContainer">
+                        <!-- Las asignaturas se renderizan aquí -->
+                    </div>
+                </div>
+
+                <!-- Tab de Exámenes -->
+                <div class="universidad-tab-content" id="examenesTab" style="display: none;">
+                    <div class="examenes-container">
+                        <div class="examenes-proximos">
+                            <h3>Próximos Exámenes</h3>
+                            <div class="examenes-lista" id="examenesProximos">
+                                <!-- Los exámenes próximos se renderizan aquí -->
+                            </div>
+                        </div>
+                        
+                        <div class="examenes-todos">
+                            <h3>Todos los Exámenes</h3>
+                            <div class="examenes-lista" id="examenesTodos">
+                                <!-- Todos los exámenes se renderizan aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Notas -->
+                <div class="universidad-tab-content" id="notasTab" style="display: none;">
+                    <div class="notas-container">
+                        <div class="notas-resumen">
+                            <div class="card">
+                                <h3>Resumen Académico</h3>
+                                <div class="resumen-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="mediaGeneral">0.0</span>
+                                        <span class="stat-label">Media General</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="creditosAprobados">0</span>
+                                        <span class="stat-label">Créditos Aprobados</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="asignaturasAprobadas">0</span>
+                                        <span class="stat-label">Asignaturas Aprobadas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="notas-detalle">
+                            <h3>Notas por Asignatura</h3>
+                            <div class="notas-lista" id="notasDetalle">
+                                <!-- Las notas se renderizan aquí -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración -->
+            <div class="page" id="configuracion" style="display: none;">
+                <header class="page-header">
+                    <h1>Configuración</h1>
+                </header>
+                
+                <div class="config-section">
+                    <div class="card">
+                        <h3>Datos</h3>
+                        <div class="config-actions">
+                            <button class="btn btn-secondary" onclick="exportData()">
+                                <i class="fas fa-download"></i>
+                                Exportar Datos
+                            </button>
+                            <label for="importFile" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i>
+                                Importar Datos
+                            </label>
+                            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                            <button class="btn btn-danger" onclick="clearAllData()">
+                                <i class="fas fa-trash"></i>
+                                Limpiar Todo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modales -->
+    
+    <!-- Modal para nueva categoría de deuda -->
+    <div id="categoriaDeudaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Categoría de Deuda</h3>
+                <button class="modal-close" onclick="closeModal('categoriaDeudaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="categoriaDeudaForm">
+                <div class="form-group">
+                    <label>Nombre de la categoría</label>
+                    <input type="text" name="nombre" placeholder="Ej: Préstamos, Tarjetas, etc." required>
+                </div>
+                <div class="form-group">
+                    <label>Icono (emoji)</label>
+                    <input type="text" name="icono" placeholder="�" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <select name="color" required>
+                        <option value="blue">🔵 Azul</option>
+                        <option value="green">🟢 Verde</option>
+                        <option value="red">🔴 Rojo</option>
+                        <option value="orange">🟠 Naranja</option>
+                        <option value="purple">� Morado</option>
+                        <option value="gray">⚫ Gris</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('categoriaDeudaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Crear Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva categoría de ME DEBEN -->
+    <div id="categoriaMeDebenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Categoría - Me Deben</h3>
+                <button class="modal-close" onclick="closeModal('categoriaMeDebenModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="categoriaMeDebenForm">
+                <div class="form-group">
+                    <label>Nombre de la categoría</label>
+                    <input type="text" name="nombre" placeholder="Ej: Amigos, Familia, Trabajo, etc." required>
+                </div>
+                <div class="form-group">
+                    <label>Icono (emoji)</label>
+                    <input type="text" name="icono" placeholder="👥" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <select name="color" required>
+                        <option value="green">🟢 Verde</option>
+                        <option value="blue">🔵 Azul</option>
+                        <option value="orange">🟠 Naranja</option>
+                        <option value="purple">🟣 Morado</option>
+                        <option value="red">🔴 Rojo</option>
+                        <option value="gray">⚫ Gris</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('categoriaMeDebenModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Crear Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva deuda (MIS DEUDAS) -->
+    <div id="deudaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Deuda (Que Debo)</h3>
+                <button class="modal-close" onclick="closeModal('deudaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="deudaForm">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="categoria" id="categoriaSelect" required>
+                        <option value="">Seleccionar categoría</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nombre/Descripción</label>
+                    <input type="text" name="nombre" placeholder="Ej: BBVA Tarjeta de Crédito" required>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad (€)</label>
+                    <input type="number" name="cantidad" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de vencimiento</label>
+                    <input type="date" name="vencimiento">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="sumarTotal" id="sumarTotal" checked>
+                        <label for="sumarTotal">Incluir en el total general</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea name="notas" placeholder="Notas adicionales..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('deudaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar Deuda
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva entrada ME DEBEN -->
+    <div id="meDebenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Entrada - Me Deben</h3>
+                <button class="modal-close" onclick="closeModal('meDebenModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="meDebenForm">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="categoria" id="categoriaMeDebenSelect" required>
+                        <option value="">Seleccionar categoría</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Persona/Descripción</label>
+                    <input type="text" name="nombre" placeholder="Ej: Juan - Préstamo personal" required>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad (€)</label>
+                    <input type="number" name="cantidad" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha esperada de pago</label>
+                    <input type="date" name="vencimiento">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="sumarTotal" id="sumarTotalMeDeben" checked>
+                        <label for="sumarTotalMeDeben">Incluir en el total general</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea name="notas" placeholder="Notas adicionales..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('meDebenModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar Entrada
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva columna de tareas -->
+    <div id="columnaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Columna</h3>
+                <button class="modal-close" onclick="closeModal('columnaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="columnaForm">
+                <div class="form-group">
+                    <label>Nombre de la columna</label>
+                    <input type="text" name="nombre" placeholder="Ej: Por hacer, En progreso, Terminado" required>
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <select name="color" required>
+                        <option value="gray">⚫ Gris (Por hacer)</option>
+                        <option value="blue">🔵 Azul (En progreso)</option>
+                        <option value="green">� Verde (Terminado)</option>
+                        <option value="orange">🟠 Naranja</option>
+                        <option value="red">🔴 Rojo</option>
+                        <option value="purple">� Morado</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('columnaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Crear Columna
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva tarea -->
+    <div id="tareaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Tarea</h3>
+                <button class="modal-close" onclick="closeModal('tareaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="tareaForm">
+                <div class="form-group">
+                    <label>Título de la tarea</label>
+                    <input type="text" name="titulo" placeholder="Título de la tarea" required>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea name="descripcion" placeholder="Descripción de la tarea..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Columna</label>
+                    <select name="columna" id="columnaSelect" required>
+                        <option value="">Seleccionar columna</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Prioridad</label>
+                    <select name="prioridad">
+                        <option value="baja">🟢 Baja</option>
+                        <option value="media" selected>🟡 Media</option>
+                        <option value="alta">🔴 Alta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha límite</label>
+                    <input type="date" name="fechaLimite">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('tareaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Crear Tarea
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nueva asignatura -->
+    <div id="asignaturaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Asignatura</h3>
+                <button class="modal-close" onclick="closeModal('asignaturaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="asignaturaForm">
+                <div class="form-group">
+                    <label>Nombre de la Asignatura</label>
+                    <input type="text" name="nombre" placeholder="Ej: Programación I, Matemáticas..." required>
+                </div>
+                <div class="form-group">
+                    <label>Código</label>
+                    <input type="text" name="codigo" placeholder="Ej: INF101">
+                </div>
+                <div class="form-group">
+                    <label>Créditos ECTS</label>
+                    <input type="number" name="creditos" placeholder="6" min="1" max="30">
+                </div>
+                <div class="form-group">
+                    <label>Profesor</label>
+                    <input type="text" name="profesor" placeholder="Nombre del profesor">
+                </div>
+                <div class="form-group">
+                    <label>Semestre</label>
+                    <select name="semestre">
+                        <option value="1">1º Semestre</option>
+                        <option value="2">2º Semestre</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Curso</label>
+                    <select name="curso">
+                        <option value="1">1º Curso</option>
+                        <option value="2">2º Curso</option>
+                        <option value="3">3º Curso</option>
+                        <option value="4">4º Curso</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('asignaturaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar Asignatura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para nuevo examen -->
+    <div id="examenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Examen</h3>
+                <button class="modal-close" onclick="closeModal('examenModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="examenForm">
+                <div class="form-group">
+                    <label>Asignatura</label>
+                    <select name="asignatura" id="asignaturaExamenSelect" required>
+                        <option value="">Seleccionar asignatura</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Examen</label>
+                    <select name="tipo">
+                        <option value="parcial">Examen Parcial</option>
+                        <option value="final">Examen Final</option>
+                        <option value="practica">Examen Práctico</option>
+                        <option value="proyecto">Proyecto/Trabajo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha y Hora</label>
+                    <input type="datetime-local" name="fechaHora" required>
+                </div>
+                <div class="form-group">
+                    <label>Aula</label>
+                    <input type="text" name="aula" placeholder="Ej: Aula 101, Lab 2...">
+                </div>
+                <div class="form-group">
+                    <label>Duración (minutos)</label>
+                    <input type="number" name="duracion" placeholder="120" min="30">
+                </div>
+                <div class="form-group">
+                    <label>Notas/Observaciones</label>
+                    <textarea name="notas" placeholder="Temas, material permitido, etc..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('examenModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar Examen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar horario -->
+    <div id="horarioModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Gestionar Horario</h3>
+                <button class="modal-close" onclick="closeModal('horarioModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="horarioForm">
+                <div class="form-group">
+                    <label>Día de la Semana</label>
+                    <select name="dia" required>
+                        <option value="lunes">Lunes</option>
+                        <option value="martes">Martes</option>
+                        <option value="miercoles">Miércoles</option>
+                        <option value="jueves">Jueves</option>
+                        <option value="viernes">Viernes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hora de Inicio</label>
+                    <input type="time" name="horaInicio" required>
+                </div>
+                <div class="form-group">
+                    <label>Hora de Fin</label>
+                    <input type="time" name="horaFin" required>
+                </div>
+                <div class="form-group">
+                    <label>Asignatura</label>
+                    <select name="asignatura" id="asignaturaHorarioSelect" required>
+                        <option value="">Seleccionar asignatura</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Clase</label>
+                    <select name="tipoClase">
+                        <option value="teoria">Teoría</option>
+                        <option value="practica">Práctica</option>
+                        <option value="laboratorio">Laboratorio</option>
+                        <option value="seminario">Seminario</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Aula</label>
+                    <input type="text" name="aula" placeholder="Ej: Aula 101, Lab Informática 2...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('horarioModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Añadir al Horario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para añadir nota -->
+    <div id="notaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Añadir Nota</h3>
+                <button class="modal-close" onclick="closeModal('notaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-form" id="notaForm">
+                <div class="form-group">
+                    <label>Asignatura</label>
+                    <select name="asignatura" id="asignaturaNotaSelect" required>
+                        <option value="">Seleccionar asignatura</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Evaluación</label>
+                    <select name="tipoEvaluacion">
+                        <option value="parcial">Examen Parcial</option>
+                        <option value="final">Examen Final</option>
+                        <option value="practica">Práctica</option>
+                        <option value="proyecto">Proyecto</option>
+                        <option value="participacion">Participación</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nota (0-10)</label>
+                    <input type="number" name="nota" min="0" max="10" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Peso (%)</label>
+                    <input type="number" name="peso" min="1" max="100" placeholder="Ej: 30 para 30%">
+                </div>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" name="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea name="observaciones" rows="2" placeholder="Comentarios sobre la evaluación..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('notaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Guardar Nota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
