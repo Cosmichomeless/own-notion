@@ -67,56 +67,95 @@ async function doLogin(){
   authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
 }
 
-/* 3) Engancha botones y escucha sesión cuando el DOM esté listo */
+/***** AUTH: BOOTSTRAP + LISTENER *****/
 let currentUser = null;
 
-// 2) El resto sí dentro de DOMContentLoaded
+// 1) Listener temprano (no esperes al DOMContentLoaded)
+supabase.auth.onAuthStateChange(async (_ev, session) => {
+  currentUser = session?.user || null;
+
+  const btnLogout  = document.getElementById('btnLogout');
+  const authStatus = document.getElementById('authStatus');
+
+  const logged = !!currentUser;
+  if (btnLogout)  btnLogout.style.display = logged ? 'inline-block' : 'none';
+  if (authStatus) authStatus.textContent = logged
+    ? `Sesión iniciada como ${currentUser.email}`
+    : 'Sin sesión';
+
+  if (logged) {
+    await afterLoginSync();   // <<--- fuerza la primera sync cuando entre la sesión
+  } else {
+    saveData(false);
+  }
+});
+
+// 2) Bootstrap en frío (por si ya hay sesión al cargar y no hay evento)
+(async function bootstrapAuth() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) console.error('getSession error:', error);
+    currentUser = session?.user || null;
+
+    const btnLogout  = document.getElementById('btnLogout');
+    const authStatus = document.getElementById('authStatus');
+    const logged = !!currentUser;
+
+    if (btnLogout)  btnLogout.style.display = logged ? 'inline-block' : 'none';
+    if (authStatus) authStatus.textContent = logged
+      ? `Sesión iniciada como ${currentUser.email}`
+      : 'Sin sesión';
+
+    if (logged) {
+      await afterLoginSync(); // <<--- ejecuta sync aunque no haya habido evento
+    }
+  } catch (e) {
+    console.error('bootstrapAuth error:', e);
+  }
+})();
+
+// Función afterLoginSync necesaria antes del DOMContentLoaded
+async function afterLoginSync() {
+  try {
+    console.log('[afterLoginSync] start, user=', currentUser?.id);
+
+    await syncDownFromSupabase();
+
+    const hasLocal =
+      (debts && debts.length) ||
+      (activities && activities.length) ||
+      (userData && userData.name);
+
+    console.log('[afterLoginSync] hasLocal=', !!hasLocal, {
+      debts: debts.length, activities: activities.length, name: userData?.name
+    });
+
+    if (hasLocal) {
+      await syncUpToSupabase();
+    }
+
+    saveData(false);
+    console.log('[afterLoginSync] done');
+  } catch (e) {
+    console.error('afterLoginSync error:', e);
+    const el = document.getElementById('authStatus');
+    if (el) el.textContent = 'Hubo un problema sincronizando. Revisa la consola.';
+  }
+}
+
+/* 3) Engancha botones cuando el DOM esté listo */
 document.addEventListener('DOMContentLoaded', () => {
   const btnLogin   = document.getElementById('btnLogin');
   const btnLogout  = document.getElementById('btnLogout');
-  const authStatus = document.getElementById('authStatus'); // <- faltaba
 
   btnLogin?.addEventListener('click', doLogin);
   btnLogout?.addEventListener('click', async () => { await supabase.auth.signOut(); });
 
-  async function afterLoginSync() {
-    try {
-      await syncDownFromSupabase();
-
-      const hasLocal =
-        (debts && debts.length) ||
-        (activities && activities.length) ||
-        (userData && userData.name);
-
-      if (hasLocal) await syncUpToSupabase();
-
-      saveData(false);
-    } catch (e) {
-      console.error('afterLoginSync error:', e);
-      if (authStatus) authStatus.textContent = 'Hubo un problema sincronizando. Revisa la consola.';
-    }
-  }
-
-  supabase.auth.onAuthStateChange(async (_ev, session) => {
-    try {
-      currentUser = session?.user || null;
-      const logged = !!currentUser;
-
-      if (btnLogout) btnLogout.style.display = logged ? 'inline-block' : 'none';
-      if (authStatus) {
-        authStatus.textContent = logged
-          ? `Sesión iniciada como ${currentUser?.email}`
-          : 'Sin sesión';
-      }
-
-      if (logged) {
-        await afterLoginSync();   // fuerza primera sync tras login
-      } else {
-        saveData(false);
-      }
-    } catch (e) {
-      console.error('onAuthStateChange error:', e);
-    }
+  // Botón de sincronización manual
+  document.getElementById('btnSync')?.addEventListener('click', async () => {
+    if (!currentUser) return alert('Inicia sesión primero');
+    await afterLoginSync();
+    alert('Sincronizado');
   });
 });
 // ======================= ESTADO LOCAL ============================
@@ -540,31 +579,56 @@ async function syncDownFromSupabase() {
 }
 
 async function syncUpToSupabase() {
-  if (!currentUser) return;
+  if (!currentUser) { console.warn('[syncUp] sin currentUser'); return; }
+  console.log('[syncUp] subiendo...', {
+    debts: debts.length, activities: activities.length, user: currentUser.id
+  });
 
-  await supabase.from('debts').delete().eq('user_id', currentUser.id);
+  // BORRA
+  let res = await supabase.from('debts').delete().eq('user_id', currentUser.id);
+  if (res.error) { console.error('[syncUp] delete debts error:', res.error); return; }
+
+  // INSERTA
   if (debts.length) {
-    const rows = debts.map(d=>({
-      id:d.id, user_id:currentUser.id, type:d.type, person:d.person,
-      amount:d.amount, description:d.description||null, date:d.date, created:d.created
+    const rows = debts.map(d => ({
+      id: d.id,
+      user_id: currentUser.id,
+      type: d.type,
+      person: d.person,
+      amount: d.amount,
+      description: d.description || null,
+      date: d.date,
+      created: d.created
     }));
-    const { error } = await supabase.from('debts').insert(rows);
-    if (error) console.warn(error);
+    res = await supabase.from('debts').insert(rows).select('id');
+    if (res.error) { console.error('[syncUp] insert debts error:', res.error); return; }
+    console.log('[syncUp] insert debts ok:', res.data?.length);
   }
 
-  await supabase.from('activities').delete().eq('user_id', currentUser.id);
+  // ACTIVITIES
+  res = await supabase.from('activities').delete().eq('user_id', currentUser.id);
+  if (res.error) { console.error('[syncUp] delete activities error:', res.error); return; }
+
   if (activities.length) {
-    const rowsA = activities.map(a=>({
-      id:a.id, user_id:currentUser.id, type:a.type, text:a.text, icon:a.icon||null, time:a.time
+    const rowsA = activities.map(a => ({
+      id: a.id,
+      user_id: currentUser.id,
+      type: a.type,
+      text: a.text,
+      icon: a.icon || null,
+      time: a.time
     }));
-    const { error } = await supabase.from('activities').insert(rowsA);
-    if (error) console.warn(error);
+    res = await supabase.from('activities').insert(rowsA).select('id');
+    if (res.error) { console.error('[syncUp] insert activities error:', res.error); return; }
+    console.log('[syncUp] insert activities ok:', res.data?.length);
   }
 
-  if (userData.name) await upsertUserProfile(userData.name);
-}
+  if (userData.name) {
+    const up = await supabase.from('user_profile')
+      .upsert({ user_id: currentUser.id, name: userData.name });
+    if (up.error) { console.error('[syncUp] upsert profile error:', up.error); return; }
+    console.log('[syncUp] profile ok');
+  }
 
-async function upsertUserProfile(name) {
-  if (!currentUser) return;
-  await supabase.from('user_profile').upsert({ user_id: currentUser.id, name });
+  console.log('[syncUp] FIN');
 }
