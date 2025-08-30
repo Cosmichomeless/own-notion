@@ -6,6 +6,22 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabasejs = window.supabase; 
 const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+
+// --- Captura el magic-link y establece la sesión (GitHub Pages) ---
+(function handleSupabaseMagicLink(){
+  // Los tokens llegan en el fragmento #... de la URL
+  const params = new URLSearchParams(location.hash.slice(1));
+  const access_token  = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (access_token && refresh_token) {
+    supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+      // Limpia la URL (quita el #... para que no se rompa nada)
+      history.replaceState({}, document.title, location.pathname + location.search);
+    });
+  }
+})();
+
+
 // 👇 NUEVO: procesa el magic link de regreso y guarda la sesión
 (async () => {
   try {
@@ -417,11 +433,8 @@ btnLogin?.addEventListener('click', async () => {
   const email = (authEmailInput?.value || '').trim();
   if (!email) return alert('Escribe tu email');
 
-  // normaliza: siempre termina en la carpeta /
-  const path = location.pathname.endsWith('/')
-    ? location.pathname
-    : location.pathname.replace(/[^/]*$/, ''); // quita index.html o lo que haya al final
-  const redirectTo = `${location.origin}${path || '/'}`; // ej: https://cosmichomeless.github.io/own-notion/
+  // Usa la carpeta publicada en GitHub Pages, con barra final
+  const redirectTo = 'https://cosmichomeless.github.io/own-notion/';
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -431,14 +444,12 @@ btnLogin?.addEventListener('click', async () => {
   if (error) {
     console.error('OTP error:', error);
     authStatus.textContent = `Error: ${error.message}`;
-    alert(
-      `No pude enviar el correo:\n${error.message}\n\n` +
-      `Asegúrate de tener esta URL permitida en Supabase:\n${redirectTo}`
-    );
+    alert(`No pude enviar el correo:\n${error.message}\n\nAsegúrate de haber permitido:\n${redirectTo}`);
     return;
   }
   authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
 });
+
 
 
 btnLogout?.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
