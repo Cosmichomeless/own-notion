@@ -1,6 +1,9 @@
 /***** SUPABASE: RELLENA ESTO *****/
 const SUPABASE_URL = "https://nkyfbgdcgunkwnboemqn.supabase.co";
-const SUPABASE_ANON_KEY = "ey...eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q";
+const SUPABASE_ANON_KEY = "PEGA_AQUI_TU_ANON_KEY_COMPLETA"; // no recortada
+
+// 👇 el bundle del CDN expone "window.supabase"
+const supabasejs = window.supabase; 
 const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /***** ESTADO LOCAL (offline) *****/
@@ -228,87 +231,59 @@ function settlePerson(personName) {
 
 /***** CRUD FINANZAS *****/
 document.getElementById('owedForm').addEventListener('submit', function(e){
-  e.preventDefault();
-  const person = document.getElementById('owedPerson').value;
-  const amount = parseFloat(document.getElementById('owedAmount').value);
-  const debt = {
-    id: Date.now(), type:'owed', person, amount,
-    description: document.getElementById('owedDescription').value,
-    date: document.getElementById('owedDate').value,
-    created: new Date().toISOString()
-  };
-  debts.push(debt);
-  addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
-  saveData();
-  this.reset();
-  document.getElementById('owedDate').value = new Date().toISOString().split('T')[0];
-});
-
-document.getElementById('oweForm').addEventListener('submit', function(e){
-  e.preventDefault();
-  const person = document.getElementById('owePerson').value;
-  const amount = parseFloat(document.getElementById('oweAmount').value);
-  const debt = {
-    id: Date.now(), type:'owe', person, amount,
-    description: document.getElementById('oweDescription').value,
-    date: document.getElementById('oweDate').value,
-    created: new Date().toISOString()
-  };
-  debts.push(debt);
-  addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
-  saveData();
-  this.reset();
-  document.getElementById('oweDate').value = new Date().toISOString().split('T')[0];
-});
-
-function deleteDebt(id) {
-  const d = debts.find(x=>x.id===id);
-  if (d && confirm('¿Estás seguro de que quieres eliminar esta entrada?')) {
-    debts = debts.filter(x=>x.id!==id);
-    addActivity('finance', `Eliminado registro de ${d.person}`, '🗑️');
+    e.preventDefault();
+  
+    const person = document.getElementById('owedPerson').value.trim();
+    const raw = (document.getElementById('owedAmount').value || '').trim();
+    const amount = parseFloat(raw.replace(',', '.'));
+    const date = document.getElementById('owedDate').value || new Date().toISOString().split('T')[0];
+  
+    if (!person || isNaN(amount)) {
+      alert('Rellena persona y una cantidad válida'); 
+      return;
+    }
+  
+    const debt = {
+      id: Date.now(), type:'owed', person, amount,
+      description: document.getElementById('owedDescription').value,
+      date,
+      created: new Date().toISOString()
+    };
+  
+    debts.push(debt);
+    addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
     saveData();
-  }
-}
-
-function markAsPaid(id) {
-  const d = debts.find(x=>x.id===id);
-  if (d && confirm('¿Marcar como pagado/resuelto?')) {
-    const action = d.type==='owed' ? 'pagó' : 'pagaste a';
-    debts = debts.filter(x=>x.id!==id);
-    addActivity('finance', `${d.person} ${action} $${d.amount.toFixed(2)}`, '✅');
+    this.reset();
+    document.getElementById('owedDate').value = new Date().toISOString().split('T')[0];
+  });
+  
+  document.getElementById('oweForm').addEventListener('submit', function(e){
+    e.preventDefault();
+  
+    const person = document.getElementById('owePerson').value.trim();
+    const raw = (document.getElementById('oweAmount').value || '').trim();
+    const amount = parseFloat(raw.replace(',', '.'));
+    const date = document.getElementById('oweDate').value || new Date().toISOString().split('T')[0];
+  
+    if (!person || isNaN(amount)) {
+      alert('Rellena persona y una cantidad válida'); 
+      return;
+    }
+  
+    const debt = {
+      id: Date.now(), type:'owe', person, amount,
+      description: document.getElementById('oweDescription').value,
+      date,
+      created: new Date().toISOString()
+    };
+  
+    debts.push(debt);
+    addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
     saveData();
-  }
-}
-
-function displayDebts() {
-  const wrap = document.getElementById('debtsList');
-  if (debts.length === 0) {
-    wrap.innerHTML = `
-      <div class="empty-state">
-        <div>💰</div>
-        <h3>No hay registros financieros</h3>
-        <p>Comienza agregando tus deudas y préstamos</p>
-      </div>`;
-    return;
-  }
-  const sorted = debts.slice().sort((a,b)=> new Date(b.created)-new Date(a.created));
-  wrap.innerHTML = sorted.map(d=>`
-    <div class="debt-item ${d.type}">
-      <div class="debt-header">
-        <span class="debt-person">${d.person}</span>
-        <span class="debt-amount ${d.type==='owed'?'positive':'negative'}">
-          ${d.type==='owed'?'+':'-'}$${d.amount.toFixed(2)}
-        </span>
-      </div>
-      ${d.description?`<div class="debt-description">${d.description}</div>`:''}
-      <div class="debt-date">Fecha: ${new Date(d.date).toLocaleDateString('es-ES')}</div>
-      <div class="debt-actions">
-        <button class="btn btn-small" onclick="markAsPaid(${d.id})">✅ Marcar como pagado</button>
-        <button class="btn btn-danger btn-small" onclick="deleteDebt(${d.id})">🗑️ Eliminar</button>
-      </div>
-    </div>`).join('');
-}
-
+    this.reset();
+    document.getElementById('oweDate').value = new Date().toISOString().split('T')[0];
+  });
+  
 /***** RESUMEN *****/
 function updateSummary() {
   const totalOwed = debts.filter(d=>d.type==='owed').reduce((s,d)=>s+d.amount,0);
