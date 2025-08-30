@@ -1,5 +1,5 @@
 // ======================= AUTH (Magic Link) =======================
-const APP_VERSION = 'login-v7';
+const APP_VERSION = 'login-v8-post-instant';
 console.log('main.js cargado:', APP_VERSION);
 document.getElementById('appVersion')?.append(APP_VERSION);
 
@@ -8,11 +8,7 @@ const SUPABASE_URL = "https://nkyfbgdcgunkwnboemqn.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
 /* 1) Procesa el regreso del magic link y guarda sesión */
@@ -70,7 +66,7 @@ async function doLogin(){
 /***** AUTH: BOOTSTRAP + LISTENER *****/
 let currentUser = null;
 
-// 1) Listener temprano (no esperes al DOMContentLoaded)
+// Listener temprano
 supabase.auth.onAuthStateChange(async (_ev, session) => {
   currentUser = session?.user || null;
 
@@ -84,13 +80,15 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
     : 'Sin sesión';
 
   if (logged) {
-    await afterLoginSync();   // <<--- fuerza la primera sync cuando entre la sesión
+    // Baja lo de la nube (ya que ahora subimos por operación individual)
+    await syncDownFromSupabase();
+    saveData(false);
   } else {
     saveData(false);
   }
 });
 
-// 2) Bootstrap en frío (por si ya hay sesión al cargar y no hay evento)
+// Bootstrap en frío
 (async function bootstrapAuth() {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -107,41 +105,13 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
       : 'Sin sesión';
 
     if (logged) {
-      await afterLoginSync(); // <<--- ejecuta sync aunque no haya habido evento
+      await syncDownFromSupabase();
+      saveData(false);
     }
   } catch (e) {
     console.error('bootstrapAuth error:', e);
   }
 })();
-
-// Función afterLoginSync necesaria antes del DOMContentLoaded
-async function afterLoginSync() {
-  try {
-    console.log('[afterLoginSync] start, user=', currentUser?.id);
-
-    await syncDownFromSupabase();
-
-    const hasLocal =
-      (debts && debts.length) ||
-      (activities && activities.length) ||
-      (userData && userData.name);
-
-    console.log('[afterLoginSync] hasLocal=', !!hasLocal, {
-      debts: debts.length, activities: activities.length, name: userData?.name
-    });
-
-    if (hasLocal) {
-      await syncUpToSupabase();
-    }
-
-    saveData(false);
-    console.log('[afterLoginSync] done');
-  } catch (e) {
-    console.error('afterLoginSync error:', e);
-    const el = document.getElementById('authStatus');
-    if (el) el.textContent = 'Hubo un problema sincronizando. Revisa la consola.';
-  }
-}
 
 /* 3) Engancha botones cuando el DOM esté listo */
 document.addEventListener('DOMContentLoaded', () => {
@@ -151,17 +121,22 @@ document.addEventListener('DOMContentLoaded', () => {
   btnLogin?.addEventListener('click', doLogin);
   btnLogout?.addEventListener('click', async () => { await supabase.auth.signOut(); });
 
-  // Botón de sincronización manual
+  // Botón de sincronización manual (ahora solo BAJA de la nube)
   document.getElementById('btnSync')?.addEventListener('click', async () => {
     if (!currentUser) return alert('Inicia sesión primero');
-    await afterLoginSync();
-    alert('Sincronizado');
+    await syncDownFromSupabase();
+    saveData(false);
+    alert('Sincronizado desde la nube');
   });
 });
+
+// ======================= UTIL ===========================
+const toYMD = (d = new Date()) => d.toISOString().slice(0,10);
+
 // ======================= ESTADO LOCAL ============================
-let debts     = JSON.parse(localStorage.getItem('personalAgendaDebts')) || [];
-let activities= JSON.parse(localStorage.getItem('personalAgendaActivities')) || [];
-let userData  = JSON.parse(localStorage.getItem('personalAgendaUser')) || { name: '' };
+let debts      = JSON.parse(localStorage.getItem('personalAgendaDebts')) || [];
+let activities = JSON.parse(localStorage.getItem('personalAgendaActivities')) || [];
+let userData   = JSON.parse(localStorage.getItem('personalAgendaUser')) || { name: '' };
 
 // ======================= UI BÁSICA ===============================
 function showTab(tabName, clickedBtn) {
@@ -171,7 +146,8 @@ function showTab(tabName, clickedBtn) {
   if (clickedBtn) clickedBtn.classList.add('active');
 }
 
-function saveData(pushToCloud = true) {
+// 👉 Sin subida automática; la haremos nosotros por operación
+function saveData(pushToCloud = false) {
   localStorage.setItem('personalAgendaDebts', JSON.stringify(debts));
   localStorage.setItem('personalAgendaActivities', JSON.stringify(activities));
   localStorage.setItem('personalAgendaUser', JSON.stringify(userData));
@@ -182,18 +158,15 @@ function saveData(pushToCloud = true) {
   updatePersonLists();
   displayDebts();
   displayPeopleView();
-
-  if (pushToCloud && currentUser) {
-    if (saveData._timer) clearTimeout(saveData._timer);
-    saveData._timer = setTimeout(() => { syncUpToSupabase(); }, 500);
-  }
 }
 
+// addActivity ahora devuelve el objeto creado (para subirlo a la nube si hay sesión)
 function addActivity(type, text, icon = '📋') {
   const activity = { id: Date.now(), type, text, icon, time: new Date().toISOString() };
   activities.unshift(activity);
   activities = activities.slice(0, 10);
-  saveData();
+  saveData(false);
+  return activity;
 }
 
 function updateDashboard() {
@@ -353,7 +326,8 @@ function displayPeopleView() {
   }).join('');
 }
 
-function settlePerson(personName) {
+async function settlePerson(personName) {
+  // local
   const personDebts = debts.filter(d=>d.person===personName);
   const totalOwed = personDebts.filter(d=>d.type==='owed').reduce((s,d)=>s+d.amount,0);
   const totalOwe  = personDebts.filter(d=>d.type==='owe' ).reduce((s,d)=>s+d.amount,0);
@@ -362,11 +336,30 @@ function settlePerson(personName) {
   const message = balance>0
     ? `¿Saldar cuenta con ${personName}?\n\n${personName} te pagará $${balance.toFixed(2)}`
     : `¿Saldar cuenta con ${personName}?\n\nTú pagarás $${Math.abs(balance).toFixed(2)} a ${personName}`;
-  if (confirm(message)) {
-    debts = debts.filter(d=>d.person!==personName);
-    addActivity('finance', `Cuenta saldada: ${balance>0? personName+' te pagó':'le pagaste a '+personName} $${Math.abs(balance).toFixed(2)}`, '💰');
-    saveData();
+  if (!confirm(message)) return;
+
+  // nube
+  if (currentUser) {
+    const { error } = await supabase
+      .from('debts')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('person', personName);
+    if (error) console.warn('[settlePerson] delete cloud error:', error);
   }
+
+  debts = debts.filter(d=>d.person!==personName);
+  const act = addActivity('finance', `Cuenta saldada: ${balance>0? personName+' te pagó':'le pagaste a '+personName} $${Math.abs(balance).toFixed(2)}`, '💰');
+
+  // sube actividad
+  if (currentUser && act) {
+    const { error: aerr } = await supabase.from('activities').insert({
+      id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
+    });
+    if (aerr) console.warn('[settlePerson] insert activity error:', aerr);
+  }
+
+  saveData(false);
 }
 
 // ======================= CRUD FINANZAS (formularios) =============
@@ -376,7 +369,7 @@ document.getElementById('owedForm')?.addEventListener('submit', async function(e
   const person = document.getElementById('owedPerson').value.trim();
   const raw    = (document.getElementById('owedAmount').value || '').trim();
   const amount = parseFloat(raw.replace(',', '.'));
-  const date   = document.getElementById('owedDate').value || new Date().toISOString().split('T')[0];
+  const date   = document.getElementById('owedDate').value || toYMD();
   if (!person || isNaN(amount)) { alert('Rellena persona y una cantidad válida'); return; }
 
   const debt = {
@@ -386,25 +379,35 @@ document.getElementById('owedForm')?.addEventListener('submit', async function(e
     created: new Date().toISOString()
   };
 
+  // Local primero
   debts.push(debt);
-  addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
-
-  // 1) guarda local y refresca UI sin disparar debounce
+  const act = addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
   saveData(false);
 
-  // 2) sube inmediatamente si hay sesión
+  // Cloud inmediato
   if (currentUser) {
     try {
-      console.log('[UI submit owed] syncUp start');
-      await syncUpToSupabase();
-      console.log('[UI submit owed] syncUp done');
+      const { error } = await supabase.from('debts').insert({
+        id: debt.id, user_id: currentUser.id, type: debt.type, person: debt.person,
+        amount: debt.amount, description: debt.description || null, date: debt.date, created: debt.created
+      }).select('id');
+      if (error) console.error('[owedForm] insert debt error:', error);
+
+      if (act) {
+        const { error: aerr } = await supabase.from('activities').insert({
+          id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
+        });
+        if (aerr) console.warn('[owedForm] insert activity error:', aerr);
+      }
     } catch (e) {
-      console.error('[UI submit owed] syncUp error:', e);
+      console.error('[owedForm] sync error:', e);
     }
+  } else {
+    console.warn('[owedForm] sin sesión: solo localStorage');
   }
 
   this.reset();
-  document.getElementById('owedDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('owedDate').value = toYMD();
 });
 
 document.getElementById('oweForm')?.addEventListener('submit', async function(e){
@@ -413,7 +416,7 @@ document.getElementById('oweForm')?.addEventListener('submit', async function(e)
   const person = document.getElementById('owePerson').value.trim();
   const raw    = (document.getElementById('oweAmount').value || '').trim();
   const amount = parseFloat(raw.replace(',', '.'));
-  const date   = document.getElementById('oweDate').value || new Date().toISOString().split('T')[0];
+  const date   = document.getElementById('oweDate').value || toYMD();
   if (!person || isNaN(amount)) { alert('Rellena persona y una cantidad válida'); return; }
 
   const debt = {
@@ -423,25 +426,35 @@ document.getElementById('oweForm')?.addEventListener('submit', async function(e)
     created: new Date().toISOString()
   };
 
+  // Local primero
   debts.push(debt);
-  addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
-
-  // 1) solo local/UI
+  const act = addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
   saveData(false);
 
-  // 2) subida inmediata
+  // Cloud inmediato
   if (currentUser) {
     try {
-      console.log('[UI submit owe] syncUp start');
-      await syncUpToSupabase();
-      console.log('[UI submit owe] syncUp done');
+      const { error } = await supabase.from('debts').insert({
+        id: debt.id, user_id: currentUser.id, type: debt.type, person: debt.person,
+        amount: debt.amount, description: debt.description || null, date: debt.date, created: debt.created
+      }).select('id');
+      if (error) console.error('[oweForm] insert debt error:', error);
+
+      if (act) {
+        const { error: aerr } = await supabase.from('activities').insert({
+          id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
+        });
+        if (aerr) console.warn('[oweForm] insert activity error:', aerr);
+      }
     } catch (e) {
-      console.error('[UI submit owe] syncUp error:', e);
+      console.error('[oweForm] sync error:', e);
     }
+  } else {
+    console.warn('[oweForm] sin sesión: solo localStorage');
   }
 
   this.reset();
-  document.getElementById('oweDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('oweDate').value = toYMD();
 });
 
 // ======================= RESUMEN Y LISTA =========================
@@ -484,35 +497,68 @@ function displayDebts(){
     `).join('');
 }
 
-function markAsPaid(id){
+async function markAsPaid(id){
   const idx = debts.findIndex(d=>d.id===id);
   if (idx === -1) return;
   const d = debts[idx];
+
+  // nube: borra fila
+  if (currentUser) {
+    const { error } = await supabase.from('debts').delete().eq('user_id', currentUser.id).eq('id', id);
+    if (error) console.warn('[markAsPaid] delete error:', error);
+  }
+
   debts.splice(idx,1);
-  addActivity('finance', `Marcado como pagado: ${d.type==='owed'? (d.person+' te pagó') : ('pagaste a '+d.person)} $${d.amount.toFixed(2)}`, '✅');
-  saveData();
+  const act = addActivity('finance', `Marcado como pagado: ${d.type==='owed'? (d.person+' te pagó') : ('pagaste a '+d.person)} $${d.amount.toFixed(2)}`, '✅');
+  saveData(false);
+
+  if (currentUser && act) {
+    const { error: aerr } = await supabase.from('activities').insert({
+      id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
+    });
+    if (aerr) console.warn('[markAsPaid] insert activity error:', aerr);
+  }
 }
 
-function deleteDebt(id){
+async function deleteDebt(id){
   const d = debts.find(dd=>dd.id===id);
   if (!d) return;
   if (!confirm('¿Eliminar este registro?')) return;
+
+  // nube: borra fila
+  if (currentUser) {
+    const { error } = await supabase.from('debts').delete().eq('user_id', currentUser.id).eq('id', id);
+    if (error) console.warn('[deleteDebt] delete error:', error);
+  }
+
   debts = debts.filter(dd=>dd.id!==id);
-  addActivity('finance', `Eliminado registro con ${d.person}`, '🗑️');
-  saveData();
+  const act = addActivity('finance', `Eliminado registro con ${d.person}`, '🗑️');
+  saveData(false);
+
+  if (currentUser && act) {
+    const { error: aerr } = await supabase.from('activities').insert({
+      id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
+    });
+    if (aerr) console.warn('[deleteDebt] insert activity error:', aerr);
+  }
 }
 
 // ======================= FECHAS por defecto ======================
-document.getElementById('owedDate')?.setAttribute('value', new Date().toISOString().split('T')[0]);
-document.getElementById('oweDate') ?.setAttribute('value', new Date().toISOString().split('T')[0]);
+document.getElementById('owedDate')?.setAttribute('value', toYMD());
+document.getElementById('oweDate') ?.setAttribute('value', toYMD());
 
 // ======================= CONFIGURACIÓN ===========================
 async function saveUserName() {
   const name = document.getElementById('userName').value.trim();
   if (!name) { showMessage('Por favor ingresa un nombre válido', 'error'); return; }
   userData.name = name;
-  saveData();
-  if (currentUser) await upsertUserProfile(name);
+  saveData(false);
+
+  if (currentUser) {
+    const { error } = await supabase.from('user_profile').upsert({ user_id: currentUser.id, name });
+    if (error) console.warn('[saveUserName] upsert profile error:', error);
+  }
+
   showMessage('Nombre guardado correctamente', 'success');
   updateDashboard();
 }
@@ -522,7 +568,7 @@ function exportData() {
   const allData = { debts, activities, userData, exportDate:new Date().toISOString(), version:APP_VERSION };
   const dataStr = JSON.stringify(allData, null, 2);
   const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-  const fname = `mi-agenda-personal-${new Date().toISOString().split('T')[0]}.json`;
+  const fname = `mi-agenda-personal-${toYMD()}.json`;
   const a = document.createElement('a'); a.href=dataUri; a.download=fname; a.click();
   addActivity('config','Datos exportados correctamente','📤');
   showMessage('Datos exportados correctamente','success');
@@ -539,7 +585,7 @@ function importData(event) {
         debts = imported.debts || [];
         activities = imported.activities || [];
         userData = imported.userData || { name:'' };
-        saveData();
+        saveData(false);
         loadUserName();
         addActivity('config','Datos importados correctamente','📥');
         showMessage(`Datos importados correctamente. ${debts.length} registros cargados.`,'success');
@@ -593,19 +639,19 @@ displayPeopleView();
 loadUserName();
 setInterval(updateDashboard, 60000);
 
-// ======================= SYNC SUPABASE ===========================
+// ======================= SYNC SUPABASE (solo DOWN aquí) =========
 async function syncDownFromSupabase() {
   if (!currentUser) return;
 
   const { data: remoteDebts, error: e1 } = await supabase
     .from('debts').select('*').eq('user_id', currentUser.id)
     .order('created', { ascending: false });
-  if (e1) { console.warn(e1); return; }
+  if (e1) { console.warn('[syncDown] debts error:', e1); return; }
 
   const { data: remoteActivities, error: e2 } = await supabase
     .from('activities').select('*').eq('user_id', currentUser.id)
     .order('time', { ascending: false }).limit(10);
-  if (e2) { console.warn(e2); return; }
+  if (e2) { console.warn('[syncDown] activities error:', e2); return; }
 
   const { data: prof } = await supabase
     .from('user_profile').select('name')
@@ -619,60 +665,6 @@ async function syncDownFromSupabase() {
     id:Number(a.id), type:a.type, text:a.text, icon:a.icon||'📋', time:new Date(a.time).toISOString()
   }));
   if (prof && prof.name) { userData.name = prof.name; loadUserName(); }
-  saveData(false);
-}
-
-async function syncUpToSupabase() {
-  if (!currentUser) { console.warn('[syncUp] sin currentUser'); return; }
-  console.log('[syncUp] subiendo...', {
-    debts: debts.length, activities: activities.length, user: currentUser.id
-  });
-
-  // BORRA
-  let res = await supabase.from('debts').delete().eq('user_id', currentUser.id);
-  if (res.error) { console.error('[syncUp] delete debts error:', res.error); return; }
-
-  // INSERTA
-  if (debts.length) {
-    const rows = debts.map(d => ({
-      id: d.id,
-      user_id: currentUser.id,
-      type: d.type,
-      person: d.person,
-      amount: d.amount,
-      description: d.description || null,
-      date: d.date,
-      created: d.created
-    }));
-    res = await supabase.from('debts').insert(rows).select('id');
-    if (res.error) { console.error('[syncUp] insert debts error:', res.error); return; }
-    console.log('[syncUp] insert debts ok:', res.data?.length);
-  }
-
-  // ACTIVITIES
-  res = await supabase.from('activities').delete().eq('user_id', currentUser.id);
-  if (res.error) { console.error('[syncUp] delete activities error:', res.error); return; }
-
-  if (activities.length) {
-    const rowsA = activities.map(a => ({
-      id: a.id,
-      user_id: currentUser.id,
-      type: a.type,
-      text: a.text,
-      icon: a.icon || null,
-      time: a.time
-    }));
-    res = await supabase.from('activities').insert(rowsA).select('id');
-    if (res.error) { console.error('[syncUp] insert activities error:', res.error); return; }
-    console.log('[syncUp] insert activities ok:', res.data?.length);
-  }
-
-  if (userData.name) {
-    const up = await supabase.from('user_profile')
-      .upsert({ user_id: currentUser.id, name: userData.name });
-    if (up.error) { console.error('[syncUp] upsert profile error:', up.error); return; }
-    console.log('[syncUp] profile ok');
-  }
-
-  console.log('[syncUp] FIN');
+  // No llamamos subida aquí.
+  console.log('[syncDown] ok →', { debts: debts.length, activities: activities.length, name: userData.name });
 }
