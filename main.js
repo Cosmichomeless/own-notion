@@ -395,16 +395,33 @@ const btnLogout = document.getElementById('btnLogout');
 const authEmailInput = document.getElementById('authEmail');
 const authStatus = document.getElementById('authStatus');
 
-btnLogin?.addEventListener('click', async ()=>{
+btnLogin?.addEventListener('click', async () => {
   const email = (authEmailInput?.value || '').trim();
   if (!email) return alert('Escribe tu email');
+
+  // normaliza: siempre termina en la carpeta /
+  const path = location.pathname.endsWith('/')
+    ? location.pathname
+    : location.pathname.replace(/[^/]*$/, ''); // quita index.html o lo que haya al final
+  const redirectTo = `${location.origin}${path || '/'}`; // ej: https://cosmichomeless.github.io/own-notion/
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.href }
+    options: { emailRedirectTo: redirectTo }
   });
-  if (error) alert(error.message);
-  else authStatus.textContent = 'Te envié un enlace de acceso por email 📩';
+
+  if (error) {
+    console.error('OTP error:', error);
+    authStatus.textContent = `Error: ${error.message}`;
+    alert(
+      `No pude enviar el correo:\n${error.message}\n\n` +
+      `Asegúrate de tener esta URL permitida en Supabase:\n${redirectTo}`
+    );
+    return;
+  }
+  authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
 });
+
 
 btnLogout?.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
 
