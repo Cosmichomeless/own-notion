@@ -70,33 +70,55 @@ async function doLogin(){
 /* 3) Engancha botones y escucha sesión cuando el DOM esté listo */
 let currentUser = null;
 
+// 2) El resto sí dentro de DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-  const btnLogin  = document.getElementById('btnLogin');
-  const btnLogout = document.getElementById('btnLogout');
+  const btnLogin   = document.getElementById('btnLogin');
+  const btnLogout  = document.getElementById('btnLogout');
+  const authStatus = document.getElementById('authStatus'); // <- faltaba
 
   btnLogin?.addEventListener('click', doLogin);
   btnLogout?.addEventListener('click', async () => { await supabase.auth.signOut(); });
 
-  supabase.auth.onAuthStateChange(async (_ev, session) => {
-    currentUser = session?.user || null;
-    const logged = !!currentUser;
-
-    const authStatusEl = document.getElementById('authStatus');
-    const btnLogoutEl  = document.getElementById('btnLogout');
-
-    if (btnLogoutEl)  btnLogoutEl.style.display = logged ? 'inline-block' : 'none';
-    if (authStatusEl) authStatusEl.textContent  = logged
-      ? `Sesión iniciada como ${currentUser?.email}`
-      : 'Sin sesión';
-
-    if (logged) {
+  async function afterLoginSync() {
+    try {
       await syncDownFromSupabase();
-      if (userData.name) await upsertUserProfile(userData.name);
+
+      const hasLocal =
+        (debts && debts.length) ||
+        (activities && activities.length) ||
+        (userData && userData.name);
+
+      if (hasLocal) await syncUpToSupabase();
+
+      saveData(false);
+    } catch (e) {
+      console.error('afterLoginSync error:', e);
+      if (authStatus) authStatus.textContent = 'Hubo un problema sincronizando. Revisa la consola.';
     }
-    saveData(false);
+  }
+
+  supabase.auth.onAuthStateChange(async (_ev, session) => {
+    try {
+      currentUser = session?.user || null;
+      const logged = !!currentUser;
+
+      if (btnLogout) btnLogout.style.display = logged ? 'inline-block' : 'none';
+      if (authStatus) {
+        authStatus.textContent = logged
+          ? `Sesión iniciada como ${currentUser?.email}`
+          : 'Sin sesión';
+      }
+
+      if (logged) {
+        await afterLoginSync();   // fuerza primera sync tras login
+      } else {
+        saveData(false);
+      }
+    } catch (e) {
+      console.error('onAuthStateChange error:', e);
+    }
   });
 });
-
 // ======================= ESTADO LOCAL ============================
 let debts     = JSON.parse(localStorage.getItem('personalAgendaDebts')) || [];
 let activities= JSON.parse(localStorage.getItem('personalAgendaActivities')) || [];
