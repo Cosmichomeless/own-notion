@@ -370,32 +370,76 @@ function settlePerson(personName) {
 }
 
 // ======================= CRUD FINANZAS (formularios) =============
-document.getElementById('owedForm')?.addEventListener('submit', function(e){
+document.getElementById('owedForm')?.addEventListener('submit', async function(e){
   e.preventDefault();
+
   const person = document.getElementById('owedPerson').value.trim();
-  const raw = (document.getElementById('owedAmount').value || '').trim();
+  const raw    = (document.getElementById('owedAmount').value || '').trim();
   const amount = parseFloat(raw.replace(',', '.'));
-  const date = document.getElementById('owedDate').value || new Date().toISOString().split('T')[0];
+  const date   = document.getElementById('owedDate').value || new Date().toISOString().split('T')[0];
   if (!person || isNaN(amount)) { alert('Rellena persona y una cantidad válida'); return; }
-  const debt = { id: Date.now(), type:'owed', person, amount, description: document.getElementById('owedDescription').value, date, created: new Date().toISOString() };
+
+  const debt = {
+    id: Date.now(), type:'owed', person, amount,
+    description: document.getElementById('owedDescription').value,
+    date,
+    created: new Date().toISOString()
+  };
+
   debts.push(debt);
   addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
-  saveData();
+
+  // 1) guarda local y refresca UI sin disparar debounce
+  saveData(false);
+
+  // 2) sube inmediatamente si hay sesión
+  if (currentUser) {
+    try {
+      console.log('[UI submit owed] syncUp start');
+      await syncUpToSupabase();
+      console.log('[UI submit owed] syncUp done');
+    } catch (e) {
+      console.error('[UI submit owed] syncUp error:', e);
+    }
+  }
+
   this.reset();
   document.getElementById('owedDate').value = new Date().toISOString().split('T')[0];
 });
 
-document.getElementById('oweForm')?.addEventListener('submit', function(e){
+document.getElementById('oweForm')?.addEventListener('submit', async function(e){
   e.preventDefault();
+
   const person = document.getElementById('owePerson').value.trim();
-  const raw = (document.getElementById('oweAmount').value || '').trim();
+  const raw    = (document.getElementById('oweAmount').value || '').trim();
   const amount = parseFloat(raw.replace(',', '.'));
-  const date = document.getElementById('oweDate').value || new Date().toISOString().split('T')[0];
+  const date   = document.getElementById('oweDate').value || new Date().toISOString().split('T')[0];
   if (!person || isNaN(amount)) { alert('Rellena persona y una cantidad válida'); return; }
-  const debt = { id: Date.now(), type:'owe', person, amount, description: document.getElementById('oweDescription').value, date, created: new Date().toISOString() };
+
+  const debt = {
+    id: Date.now(), type:'owe', person, amount,
+    description: document.getElementById('oweDescription').value,
+    date,
+    created: new Date().toISOString()
+  };
+
   debts.push(debt);
   addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
-  saveData();
+
+  // 1) solo local/UI
+  saveData(false);
+
+  // 2) subida inmediata
+  if (currentUser) {
+    try {
+      console.log('[UI submit owe] syncUp start');
+      await syncUpToSupabase();
+      console.log('[UI submit owe] syncUp done');
+    } catch (e) {
+      console.error('[UI submit owe] syncUp error:', e);
+    }
+  }
+
   this.reset();
   document.getElementById('oweDate').value = new Date().toISOString().split('T')[0];
 });
