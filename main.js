@@ -1,10 +1,28 @@
 /***** SUPABASE *****/
 const SUPABASE_URL = "https://nkyfbgdcgunkwnboemqn.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q"; // no recortada
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q";
 
 // 👇 el bundle del CDN expone "window.supabase"
 const supabasejs = window.supabase; 
 const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 👇 NUEVO: procesa el magic link de regreso y guarda la sesión
+(async () => {
+  try {
+    if (location.hash.includes('access_token') || location.search.includes('access_token')) {
+      const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      if (error) {
+        console.error('getSessionFromUrl error:', error);
+      } else {
+        const cleanUrl = location.pathname + location.search;
+        history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  } catch (e) {
+    console.error('Error al procesar el magic link:', e);
+  }
+})();
+
 
 /***** ESTADO LOCAL (offline) *****/
 let debts = JSON.parse(localStorage.getItem('personalAgendaDebts')) || [];
