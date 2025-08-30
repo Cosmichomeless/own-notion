@@ -1,6 +1,6 @@
-/***** SUPABASE: RELLENA ESTO *****/
+/***** SUPABASE *****/
 const SUPABASE_URL = "https://nkyfbgdcgunkwnboemqn.supabase.co";
-const SUPABASE_ANON_KEY = "PEGA_AQUI_TU_ANON_KEY_COMPLETA"; // no recortada
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q"; // no recortada
 
 // 👇 el bundle del CDN expone "window.supabase"
 const supabasejs = window.supabase; 
