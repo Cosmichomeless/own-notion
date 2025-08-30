@@ -1,6 +1,8 @@
 # Mi Notion Personal - Gestión Financiera
 
 Una aplicación web privada tipo Notion diseñada específicamente para la gestión de finanzas personales.
+https://cosmichomeless.github.io/own-notion/
+
 
 ## Características
 
