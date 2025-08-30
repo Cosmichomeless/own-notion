@@ -1,3 +1,51 @@
+// ——— Versión (para comprobar que carga el archivo correcto) ———
+const APP_VERSION = 'login-v6';
+console.log('main.js cargado:', APP_VERSION);
+
+// ——— Captura del magic link en GitHub Pages ———
+(function handleSupabaseMagicLink(){
+  const params = new URLSearchParams(location.hash.slice(1));
+  const access_token  = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (access_token && refresh_token) {
+    supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+      // Limpia el #... de la URL
+      history.replaceState({}, document.title, location.pathname + location.search);
+    });
+  }
+})();
+
+// ——— Login explícito (misma redirectTo que te funciona) ———
+async function doLogin(){
+  try {
+    const emailInput = document.getElementById('authEmail');
+    const authStatus = document.getElementById('authStatus');
+    const email = (emailInput?.value || '').trim();
+    if (!email) return alert('Escribe tu email');
+
+    const redirectTo = 'https://cosmichomeless.github.io/own-notion/';
+
+    console.log('[login] usando redirectTo:', redirectTo, 'email:', email);
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo }
+    });
+
+    if (error) {
+      console.error('OTP error:', error);
+      authStatus.textContent = `Error: ${error.message}`;
+      alert(`No pude enviar el correo:\n${error.message}\n\nAsegúrate de permitir:\n${redirectTo}`);
+      return;
+    }
+    console.log('[login] OK', data);
+    authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
+  } catch (e) {
+    console.error('Fallo inesperado en doLogin()', e);
+    alert('Ocurrió un error inesperado. Revisa la consola.');
+  }
+}
+
+
 /***** SUPABASE *****/
 const SUPABASE_URL = "https://nkyfbgdcgunkwnboemqn.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5reWZiZ2RjZ3Vua3duYm9lbXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzM4MzUsImV4cCI6MjA3MjE0OTgzNX0.eKhl-eMS5SsmaZj2DEe9S0IvfNXHKV1d5m-sJAkzs2Q";
@@ -429,26 +477,26 @@ const btnLogout = document.getElementById('btnLogout');
 const authEmailInput = document.getElementById('authEmail');
 const authStatus = document.getElementById('authStatus');
 
-btnLogin?.addEventListener('click', async () => {
-  const email = (authEmailInput?.value || '').trim();
-  if (!email) return alert('Escribe tu email');
+// btnLogin?.addEventListener('click', async () => {
+//   const email = (authEmailInput?.value || '').trim();
+//   if (!email) return alert('Escribe tu email');
 
-  // Usa la carpeta publicada en GitHub Pages, con barra final
-  const redirectTo = 'https://cosmichomeless.github.io/own-notion/';
+//   // Usa la carpeta publicada en GitHub Pages, con barra final
+//   const redirectTo = 'https://cosmichomeless.github.io/own-notion/';
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo }
-  });
+//   const { error } = await supabase.auth.signInWithOtp({
+//     email,
+//     options: { emailRedirectTo: redirectTo }
+//   });
 
-  if (error) {
-    console.error('OTP error:', error);
-    authStatus.textContent = `Error: ${error.message}`;
-    alert(`No pude enviar el correo:\n${error.message}\n\nAsegúrate de haber permitido:\n${redirectTo}`);
-    return;
-  }
-  authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
-});
+//   if (error) {
+//     console.error('OTP error:', error);
+//     authStatus.textContent = `Error: ${error.message}`;
+//     alert(`No pude enviar el correo:\n${error.message}\n\nAsegúrate de haber permitido:\n${redirectTo}`);
+//     return;
+//   }
+//   authStatus.textContent = 'Te envié un enlace de acceso por email 📩 (revisa spam)';
+// });
 
 
 
