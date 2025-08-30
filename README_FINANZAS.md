@@ -24,6 +24,12 @@ Una aplicación web moderna para gestionar tus deudas y gastos personales, con a
 5. Ejecuta el script completo
 6. Ve a Settings > API para obtener tu URL y anon key
 
+**IMPORTANTE**: El script incluye:
+- Creación automática de perfil de usuario al registrarse
+- Migración para usuarios existentes sin perfil
+- Políticas de seguridad RLS
+- Índices optimizados para rendimiento
+
 ### 2. Configurar la Aplicación
 
 1. Abre el archivo `main.js`
@@ -138,6 +144,16 @@ finanzas-personales/
 1. Verifica tu conexión a internet
 2. Ve a Configuración > Diagnóstico para ver errores
 3. Revisa la consola del navegador (F12)
+
+### No aparece mi nombre al iniciar sesión en otro dispositivo
+1. La aplicación crea automáticamente un perfil con tu email como nombre base
+2. Si cambias tu nombre en un dispositivo, se sincronizará automáticamente
+3. Usa el diagnóstico para verificar que el perfil de usuario existe
+
+### Los datos no persisten entre dispositivos
+1. Asegúrate de estar logueado con el mismo email en ambos dispositivos
+2. Verifica que la sincronización esté funcionando (ve a Diagnóstico)
+3. Los datos se sincronizan automáticamente al iniciar sesión
 
 ### Perdí mis datos
 1. Si tenías sincronización activa, haz login de nuevo

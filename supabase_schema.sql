@@ -117,6 +117,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Función para crear automáticamente un perfil de usuario cuando se registra
+CREATE OR REPLACE FUNCTION create_user_profile()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.user_profile (user_id, name)
+    VALUES (
+        NEW.id, 
+        COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1), 'Usuario')
+    )
+    ON CONFLICT (user_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Triggers para actualizar updated_at
 CREATE TRIGGER update_user_profile_updated_at
     BEFORE UPDATE ON user_profile
@@ -127,6 +141,31 @@ CREATE TRIGGER update_debts_updated_at
     BEFORE UPDATE ON debts
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger para crear perfil automáticamente cuando se registra un usuario
+CREATE TRIGGER create_user_profile_trigger
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION create_user_profile();
+
+-- =====================================================
+-- MIGRACIÓN PARA USUARIOS EXISTENTES
+-- =====================================================
+-- Si ya tienes usuarios registrados sin perfil, ejecuta esto para crearlos automáticamente
+
+INSERT INTO user_profile (user_id, name, created_at, updated_at)
+SELECT 
+    id as user_id,
+    COALESCE(
+        raw_user_meta_data->>'name',
+        split_part(email, '@', 1),
+        'Usuario'
+    ) as name,
+    created_at,
+    NOW() as updated_at
+FROM auth.users
+WHERE id NOT IN (SELECT user_id FROM user_profile)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- =====================================================
 -- DATOS DE EJEMPLO (OPCIONAL)

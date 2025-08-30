@@ -66,6 +66,84 @@ async function doLogin(){
 /***** AUTH: BOOTSTRAP + LISTENER *****/
 let currentUser = null;
 
+// Función para asegurar que el perfil de usuario existe
+async function ensureUserProfile() {
+  if (!currentUser) return;
+
+  try {
+    const session = await supabase.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    
+    if (!token) {
+      console.warn('[ensureUserProfile] No hay token');
+      return;
+    }
+
+    // Primero verificar si ya existe el perfil
+    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profile?user_id=eq.${currentUser.id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (checkResponse.ok) {
+      const profiles = await checkResponse.json();
+      
+      if (profiles.length === 0) {
+        // No existe perfil, crear uno nuevo
+        console.log('[ensureUserProfile] Creando perfil de usuario...');
+        
+        // Usar el nombre local si existe, si no usar el email como base
+        const defaultName = userData.name || currentUser.email.split('@')[0] || 'Usuario';
+        
+        const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profile`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            name: defaultName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        if (createResponse.ok) {
+          console.log('[ensureUserProfile] Perfil creado exitosamente');
+          // Actualizar nombre local si no teníamos uno
+          if (!userData.name) {
+            userData.name = defaultName;
+            document.getElementById('userName').value = defaultName;
+            saveData(false);
+          }
+        } else {
+          const errorData = await createResponse.text();
+          console.error('[ensureUserProfile] Error al crear perfil:', createResponse.status, errorData);
+        }
+      } else {
+        console.log('[ensureUserProfile] Perfil ya existe');
+        // Si el perfil existe pero no tenemos nombre local, usarlo
+        if (!userData.name && profiles[0].name) {
+          userData.name = profiles[0].name;
+          document.getElementById('userName').value = profiles[0].name;
+          saveData(false);
+        }
+      }
+    } else {
+      console.error('[ensureUserProfile] Error al verificar perfil:', checkResponse.status);
+    }
+  } catch (error) {
+    console.error('[ensureUserProfile] Error:', error);
+  }
+}
+
 // Listener temprano
 supabase.auth.onAuthStateChange(async (_ev, session) => {
   currentUser = session?.user || null;
@@ -80,6 +158,8 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
     : 'Sin sesión';
 
   if (logged) {
+    // Asegurar que el perfil de usuario existe
+    await ensureUserProfile();
     // Baja lo de la nube (ya que ahora subimos por operación individual)
     await syncDownFromSupabase();
     saveData(false);
@@ -105,6 +185,7 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
       : 'Sin sesión';
 
     if (logged) {
+      await ensureUserProfile();
       await syncDownFromSupabase();
       saveData(false);
     }
@@ -991,6 +1072,35 @@ async function runDiagnostic() {
     }
   } catch (e) {
     console.error('❌ Error en GET /auth/v1/user:', e);
+  }
+
+  // 3.5. Verificar perfil de usuario
+  try {
+    console.log('3.5. Verificando perfil de usuario...');
+    const profileRes = await fetch(`https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/user_profile?user_id=eq.${currentUser.id}`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('   - Respuesta perfil:', profileRes.status, profileRes.statusText);
+    
+    if (profileRes.ok) {
+      const profiles = await profileRes.json();
+      if (profiles.length > 0) {
+        console.log('✅ Perfil de usuario encontrado:', profiles[0]);
+      } else {
+        console.log('⚠️ No hay perfil de usuario - se creará automáticamente');
+        await ensureUserProfile();
+      }
+    } else {
+      const errorText = await profileRes.text();
+      console.error('❌ Error al verificar perfil:', errorText);
+    }
+  } catch (e) {
+    console.error('❌ Error al verificar perfil:', e);
   }
 
   // 4. Test de conexión POST /rest/v1/debts
