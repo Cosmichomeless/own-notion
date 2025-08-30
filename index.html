@@ -24,7 +24,7 @@
       margin: 0 auto;
       background: white;
       border-radius: 15px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
       overflow: hidden;
     }
 
@@ -41,7 +41,7 @@
     }
 
     .header p {
-      opacity: 0.9;
+      opacity: .9;
       font-size: 1.1rem;
     }
 
@@ -102,7 +102,7 @@
       background: #f8f9fa;
       border-radius: 10px;
       padding: 25px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
     }
 
     .card h3 {
@@ -181,7 +181,7 @@
       padding: 20px;
       margin-bottom: 15px;
       border-left: 4px solid #667eea;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
       transition: transform .3s;
     }
 
@@ -286,7 +286,7 @@
       background: white;
       border-radius: 12px;
       padding: 25px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, .1);
       cursor: pointer;
       transition: .3s;
       border: 2px solid transparent;
@@ -294,7 +294,7 @@
 
     .dashboard-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, .15);
       border-color: #667eea;
     }
 
@@ -511,7 +511,7 @@
       border-radius: 12px;
       padding: 25px;
       margin-bottom: 20px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
       border-left: 4px solid #667eea;
     }
 
@@ -740,13 +740,11 @@
 
     <div id="dashboard" class="tab-content active">
       <h2 class="section-title">📊 Dashboard Principal</h2>
-      <div class="welcome-section">
-        <div class="card"
-          style="background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; padding:30px; border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(102,126,234,.3);">
-          <h2 id="welcomeMessage">¡Buen día!</h2>
-          <p id="currentDate"></p>
-          <p>Tu agenda personal te da la bienvenida</p>
-        </div>
+      <div class="card"
+        style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; padding:30px; border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(102,126,234,.3);">
+        <h2 id="welcomeMessage">¡Buen día!</h2>
+        <p id="currentDate"></p>
+        <p>Tu agenda personal te da la bienvenida</p>
       </div>
 
       <div class="dashboard-grid">
@@ -929,7 +927,6 @@
     <div id="configuracion" class="tab-content">
       <h2 class="section-title">⚙️ Configuración</h2>
 
-      <!-- Información Personal -->
       <div class="config-section">
         <h3>👤 Información Personal</h3>
         <div class="card">
@@ -939,7 +936,6 @@
         </div>
       </div>
 
-      <!-- Sesión (Supabase) -->
       <div class="config-section">
         <h3>🔐 Sesión</h3>
         <div class="card">
@@ -948,14 +944,13 @@
             <input type="email" id="authEmail" placeholder="tucorreo@ejemplo.com">
           </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="btnLogin" type="button" onclick="doLogin()">Entrar / Enviarme enlace</button>
+            <button class="btn" id="btnLogin">Entrar / Enviarme enlace</button>
             <button class="btn btn-danger" id="btnLogout" style="display:none;">Cerrar sesión</button>
           </div>
           <p id="authStatus" style="margin-top:10px; color:#6c757d;">Sin sesión</p>
         </div>
       </div>
 
-      <!-- Gestión de datos -->
       <div class="config-section">
         <h3>💾 Gestión de Datos</h3>
         <div class="data-management">
@@ -978,12 +973,11 @@
         </div>
       </div>
 
-      <!-- Información de la app -->
       <div class="config-section">
         <h3>ℹ️ Información</h3>
         <div class="card">
           <div class="info-grid">
-            <div class="info-item"><strong>Versión:</strong> 1.0.0</div>
+            <div class="info-item"><strong>Versión:</strong> <span id="appVersion">—</span></div>
             <div class="info-item"><strong>Total de registros:</strong> <span id="totalRecords">0</span></div>
             <div class="info-item"><strong>Espacio utilizado:</strong> <span id="storageUsed">0 KB</span></div>
             <div class="info-item"><strong>Última actividad:</strong> <span id="lastActivity">Nunca</span></div>
@@ -993,8 +987,9 @@
     </div>
   </div>
 
+  <!-- Supabase SDK + tu script -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="main.js?v=6"></script> <!-- 👈 sube el número si vuelves a cambiar el archivo -->
-  </body>
+  <script src="main.js"></script>
+</body>
 
 </html>
