@@ -158,10 +158,17 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
     : 'Sin sesión';
 
   if (logged) {
-    // Asegurar que el perfil de usuario existe
-    await ensureUserProfile();
-    // Baja lo de la nube (ya que ahora subimos por operación individual)
-    await syncDownFromSupabase();
+    console.log('[auth] Usuario logueado, iniciando sincronización completa...');
+    // Hacer sincronización completa al iniciar sesión
+    try {
+      await fullSync();
+      console.log('[auth] Sincronización completa exitosa');
+    } catch (error) {
+      console.error('[auth] Error en sincronización:', error);
+      // Si falla la sincronización completa, al menos intentar bajar datos
+      await ensureUserProfile();
+      await syncDownFromSupabase();
+    }
     saveData(false);
   } else {
     saveData(false);
@@ -185,8 +192,16 @@ supabase.auth.onAuthStateChange(async (_ev, session) => {
       : 'Sin sesión';
 
     if (logged) {
-      await ensureUserProfile();
-      await syncDownFromSupabase();
+      console.log('[bootstrap] Usuario ya logueado, iniciando sincronización completa...');
+      try {
+        await fullSync();
+        console.log('[bootstrap] Sincronización completa exitosa');
+      } catch (error) {
+        console.error('[bootstrap] Error en sincronización:', error);
+        // Si falla la sincronización completa, al menos intentar bajar datos
+        await ensureUserProfile();
+        await syncDownFromSupabase();
+      }
       saveData(false);
     }
   } catch (e) {
@@ -202,12 +217,30 @@ document.addEventListener('DOMContentLoaded', () => {
   btnLogin?.addEventListener('click', doLogin);
   btnLogout?.addEventListener('click', async () => { await supabase.auth.signOut(); });
 
-  // Botón de sincronización manual (ahora solo BAJA de la nube)
+  // Botón de sincronización manual completa (sube y baja)
   document.getElementById('btnSync')?.addEventListener('click', async () => {
     if (!currentUser) return alert('Inicia sesión primero');
-    await syncDownFromSupabase();
-    saveData(false);
-    alert('Sincronizado desde la nube');
+    
+    const btn = document.getElementById('btnSync');
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Sincronizando...';
+    btn.disabled = true;
+
+    try {
+      const success = await fullSync();
+      if (success) {
+        alert('✅ Sincronización completa exitosa');
+        addActivity('config', 'Sincronización manual completada', '🔄');
+      } else {
+        alert('⚠️ Hubo problemas en la sincronización - revisa la consola');
+      }
+    } catch (error) {
+      console.error('Error en sincronización manual:', error);
+      alert('❌ Error en la sincronización');
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
   });
 
   // Botón de diagnóstico
@@ -1173,4 +1206,169 @@ async function runDiagnostic() {
 
   console.log('=== FIN DIAGNÓSTICO ===');
   alert('Diagnóstico completado - revisa la consola para detalles');
+}
+
+// ======================= SINCRONIZACIÓN BIDIRECCIONAL ============
+async function fullSync() {
+  if (!currentUser) {
+    console.warn('[fullSync] No hay usuario autenticado');
+    updateSyncStatus('❌ Sin usuario autenticado');
+    return false;
+  }
+
+  try {
+    updateSyncStatus('🔄 Sincronizando...');
+    console.log('[fullSync] Iniciando sincronización completa...');
+    
+    const session = await supabase.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    
+    if (!token) {
+      console.warn('[fullSync] No hay token');
+      updateSyncStatus('❌ Sin token de acceso');
+      return false;
+    }
+
+    // 1. Asegurar que el perfil existe
+    updateSyncStatus('👤 Verificando perfil...');
+    await ensureUserProfile();
+
+    // 2. Subir deudas locales que no están en la nube
+    updateSyncStatus('💰 Subiendo deudas...');
+    let debtCount = 0;
+    for (const debt of debts) {
+      try {
+        const uploadData = {
+          id: debt.id,
+          user_id: currentUser.id,
+          type: debt.type,
+          person: debt.person,
+          amount: parseFloat(debt.amount),
+          description: debt.description || '',
+          date: debt.date,
+          created: debt.created || new Date().toISOString()
+        };
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/debts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(uploadData)
+        });
+
+        if (response.ok) {
+          debtCount++;
+          console.log(`[fullSync] Deuda subida: ${debt.person} - $${debt.amount}`);
+        } else if (response.status === 409) {
+          // Conflicto - ya existe, está bien
+          console.log(`[fullSync] Deuda ya existe: ${debt.person} - $${debt.amount}`);
+        } else {
+          console.warn(`[fullSync] Error al subir deuda:`, response.status);
+        }
+      } catch (error) {
+        console.error(`[fullSync] Error al subir deuda ${debt.id}:`, error);
+      }
+    }
+
+    // 3. Subir actividades locales
+    updateSyncStatus('📝 Subiendo actividades...');
+    let activityCount = 0;
+    for (const activity of activities) {
+      try {
+        const uploadData = {
+          id: activity.id,
+          user_id: currentUser.id,
+          type: activity.type,
+          text: activity.text,
+          icon: activity.icon || '📋',
+          time: activity.time || new Date().toISOString()
+        };
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/activities`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(uploadData)
+        });
+
+        if (response.ok) {
+          activityCount++;
+          console.log(`[fullSync] Actividad subida: ${activity.text}`);
+        } else if (response.status === 409) {
+          console.log(`[fullSync] Actividad ya existe: ${activity.text}`);
+        } else {
+          console.warn(`[fullSync] Error al subir actividad:`, response.status);
+        }
+      } catch (error) {
+        console.error(`[fullSync] Error al subir actividad ${activity.id}:`, error);
+      }
+    }
+
+    // 4. Actualizar perfil si hay nombre local
+    if (userData.name) {
+      updateSyncStatus('👤 Actualizando perfil...');
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profile`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            name: userData.name,
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        if (response.ok) {
+          console.log(`[fullSync] Perfil actualizado: ${userData.name}`);
+        }
+      } catch (error) {
+        console.error(`[fullSync] Error al actualizar perfil:`, error);
+      }
+    }
+
+    // 5. Bajar datos actualizados de la nube
+    updateSyncStatus('📥 Descargando datos...');
+    await syncDownFromSupabase();
+
+    // 6. Actualizar UI
+    updateSyncStatus('🎨 Actualizando interfaz...');
+    updateSummary();
+    updateDashboard();
+    displayDebts();
+    displayPeopleView();
+    loadUserName();
+
+    const timestamp = new Date().toLocaleTimeString();
+    updateSyncStatus(`✅ Sincronizado (${timestamp})`);
+    console.log('[fullSync] Sincronización completa exitosa');
+    return true;
+
+  } catch (error) {
+    console.error('[fullSync] Error general:', error);
+    updateSyncStatus('❌ Error en sincronización');
+    return false;
+  }
+}
+
+function updateSyncStatus(message) {
+  const statusElement = document.getElementById('syncStatus');
+  if (statusElement) {
+    statusElement.textContent = message;
+    statusElement.style.color = message.includes('❌') ? '#e74c3c' : 
+                               message.includes('✅') ? '#27ae60' : 
+                               message.includes('🔄') ? '#f39c12' : '#6c757d';
+  }
 }
