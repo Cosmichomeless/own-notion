@@ -128,6 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData(false);
     alert('Sincronizado desde la nube');
   });
+
+  // Botón de diagnóstico
+  document.getElementById('btnDiagnose')?.addEventListener('click', async () => {
+    await runDiagnostic();
+  });
 });
 
 // ======================= UTIL ===========================
@@ -384,26 +389,52 @@ document.getElementById('owedForm')?.addEventListener('submit', async function(e
   const act = addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
   saveData(false);
 
-  // Cloud inmediato
+  // Cloud inmediato con logs detallados
   if (currentUser) {
     try {
-      const { error } = await supabase.from('debts').insert({
-        id: debt.id, user_id: currentUser.id, type: debt.type, person: debt.person,
-        amount: debt.amount, description: debt.description || null, date: debt.date, created: debt.created
+      console.log('[owedForm] intentando insertar deuda:', { user_id: currentUser.id, debt_id: debt.id });
+      
+      const { data, error } = await supabase.from('debts').insert({
+        id: debt.id, 
+        user_id: currentUser.id, 
+        type: debt.type, 
+        person: debt.person,
+        amount: debt.amount, 
+        description: debt.description || null, 
+        date: debt.date, 
+        created: debt.created
       }).select('id');
-      if (error) console.error('[owedForm] insert debt error:', error);
+      
+      if (error) {
+        console.error('[owedForm] insert debt error:', error);
+        alert(`Error al guardar en la nube: ${error.message}`);
+      } else {
+        console.log('[owedForm] deuda insertada correctamente:', data);
+      }
 
       if (act) {
-        const { error: aerr } = await supabase.from('activities').insert({
-          id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
-        });
-        if (aerr) console.warn('[owedForm] insert activity error:', aerr);
+        const { data: actData, error: aerr } = await supabase.from('activities').insert({
+          id: act.id, 
+          user_id: currentUser.id, 
+          type: act.type, 
+          text: act.text, 
+          icon: act.icon, 
+          time: act.time
+        }).select('id');
+        
+        if (aerr) {
+          console.warn('[owedForm] insert activity error:', aerr);
+        } else {
+          console.log('[owedForm] actividad insertada correctamente:', actData);
+        }
       }
     } catch (e) {
       console.error('[owedForm] sync error:', e);
+      alert(`Error de conexión: ${e.message}`);
     }
   } else {
     console.warn('[owedForm] sin sesión: solo localStorage');
+    alert('Sin sesión activa - solo se guardó localmente');
   }
 
   this.reset();
@@ -431,26 +462,52 @@ document.getElementById('oweForm')?.addEventListener('submit', async function(e)
   const act = addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
   saveData(false);
 
-  // Cloud inmediato
+  // Cloud inmediato con logs detallados
   if (currentUser) {
     try {
-      const { error } = await supabase.from('debts').insert({
-        id: debt.id, user_id: currentUser.id, type: debt.type, person: debt.person,
-        amount: debt.amount, description: debt.description || null, date: debt.date, created: debt.created
+      console.log('[oweForm] intentando insertar deuda:', { user_id: currentUser.id, debt_id: debt.id });
+      
+      const { data, error } = await supabase.from('debts').insert({
+        id: debt.id, 
+        user_id: currentUser.id, 
+        type: debt.type, 
+        person: debt.person,
+        amount: debt.amount, 
+        description: debt.description || null, 
+        date: debt.date, 
+        created: debt.created
       }).select('id');
-      if (error) console.error('[oweForm] insert debt error:', error);
+      
+      if (error) {
+        console.error('[oweForm] insert debt error:', error);
+        alert(`Error al guardar en la nube: ${error.message}`);
+      } else {
+        console.log('[oweForm] deuda insertada correctamente:', data);
+      }
 
       if (act) {
-        const { error: aerr } = await supabase.from('activities').insert({
-          id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
-        });
-        if (aerr) console.warn('[oweForm] insert activity error:', aerr);
+        const { data: actData, error: aerr } = await supabase.from('activities').insert({
+          id: act.id, 
+          user_id: currentUser.id, 
+          type: act.type, 
+          text: act.text, 
+          icon: act.icon, 
+          time: act.time
+        }).select('id');
+        
+        if (aerr) {
+          console.warn('[oweForm] insert activity error:', aerr);
+        } else {
+          console.log('[oweForm] actividad insertada correctamente:', actData);
+        }
       }
     } catch (e) {
       console.error('[oweForm] sync error:', e);
+      alert(`Error de conexión: ${e.message}`);
     }
   } else {
     console.warn('[oweForm] sin sesión: solo localStorage');
+    alert('Sin sesión activa - solo se guardó localmente');
   }
 
   this.reset();
@@ -525,10 +582,29 @@ async function deleteDebt(id){
   if (!d) return;
   if (!confirm('¿Eliminar este registro?')) return;
 
-  // nube: borra fila
+  // nube: borra fila con logs detallados
   if (currentUser) {
-    const { error } = await supabase.from('debts').delete().eq('user_id', currentUser.id).eq('id', id);
-    if (error) console.warn('[deleteDebt] delete error:', error);
+    try {
+      console.log('[deleteDebt] intentando eliminar:', { user_id: currentUser.id, debt_id: id });
+      
+      const { data, error } = await supabase.from('debts')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('id', id)
+        .select('id');
+        
+      if (error) {
+        console.error('[deleteDebt] delete error:', error);
+        alert(`Error al eliminar de la nube: ${error.message}`);
+        return; // No eliminar localmente si falló en la nube
+      } else {
+        console.log('[deleteDebt] eliminado correctamente de la nube:', data);
+      }
+    } catch (e) {
+      console.error('[deleteDebt] error de conexión:', e);
+      alert(`Error de conexión al eliminar: ${e.message}`);
+      return;
+    }
   }
 
   debts = debts.filter(dd=>dd.id!==id);
@@ -536,10 +612,24 @@ async function deleteDebt(id){
   saveData(false);
 
   if (currentUser && act) {
-    const { error: aerr } = await supabase.from('activities').insert({
-      id: act.id, user_id: currentUser.id, type: act.type, text: act.text, icon: act.icon, time: act.time
-    });
-    if (aerr) console.warn('[deleteDebt] insert activity error:', aerr);
+    try {
+      const { data: actData, error: aerr } = await supabase.from('activities').insert({
+        id: act.id, 
+        user_id: currentUser.id, 
+        type: act.type, 
+        text: act.text, 
+        icon: act.icon, 
+        time: act.time
+      }).select('id');
+      
+      if (aerr) {
+        console.warn('[deleteDebt] insert activity error:', aerr);
+      } else {
+        console.log('[deleteDebt] actividad insertada correctamente:', actData);
+      }
+    } catch (e) {
+      console.warn('[deleteDebt] error al insertar actividad:', e);
+    }
   }
 }
 
@@ -667,4 +757,121 @@ async function syncDownFromSupabase() {
   if (prof && prof.name) { userData.name = prof.name; loadUserName(); }
   // No llamamos subida aquí.
   console.log('[syncDown] ok →', { debts: debts.length, activities: activities.length, name: userData.name });
+}
+
+// ======================= FUNCIÓN DE DIAGNÓSTICO =================
+async function runDiagnostic() {
+  console.log('=== DIAGNÓSTICO SUPABASE ===');
+  
+  // 1. Verificar token de autenticación
+  const token = JSON.parse(localStorage.getItem('sb-nkyfbgdcgunkwnboemqn-auth-token') || 'null');
+  console.log('1. Token de localStorage:', !!token?.access_token ? 'ENCONTRADO' : 'NO ENCONTRADO');
+  
+  if (!token?.access_token) {
+    console.error('❌ Sin token de acceso - necesitas hacer login');
+    alert('❌ Sin autenticación - inicia sesión primero');
+    return;
+  }
+
+  // 2. Verificar usuario actual
+  console.log('2. currentUser:', currentUser ? `${currentUser.id} (${currentUser.email})` : 'NULL');
+  
+  if (!currentUser) {
+    console.error('❌ currentUser es null - problema de autenticación');
+    alert('❌ currentUser es null - refresca la página e inicia sesión');
+    return;
+  }
+
+  // 3. Test de conexión GET /auth/v1/user
+  try {
+    console.log('3. Probando GET /auth/v1/user...');
+    const userRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/auth/v1/user', {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token.access_token}`
+      }
+    });
+    console.log('   - Respuesta:', userRes.status, userRes.statusText);
+    
+    if (userRes.ok) {
+      const userJson = await userRes.json();
+      console.log('   - Usuario:', userJson.id, userJson.email);
+      console.log('✅ GET /auth/v1/user funcionando');
+    } else {
+      console.error('❌ GET /auth/v1/user falló');
+    }
+  } catch (e) {
+    console.error('❌ Error en GET /auth/v1/user:', e);
+  }
+
+  // 4. Test de conexión POST /rest/v1/debts
+  try {
+    console.log('4. Probando POST /rest/v1/debts...');
+    const now = new Date();
+    const testRow = {
+      id: Date.now(),
+      user_id: currentUser.id,
+      type: 'owed',
+      person: 'Test Diagnóstico',
+      amount: 1.00,
+      description: 'Test de diagnóstico - puede eliminarse',
+      date: now.toISOString().slice(0,10),
+      created: now.toISOString()
+    };
+
+    const insertRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/debts', {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token.access_token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(testRow)
+    });
+
+    console.log('   - Respuesta POST:', insertRes.status, insertRes.statusText);
+    
+    if (insertRes.ok) {
+      const insertJson = await insertRes.json();
+      console.log('   - Fila insertada:', insertJson);
+      console.log('✅ POST /rest/v1/debts funcionando');
+      
+      // Limpiar el test
+      await supabase.from('debts').delete().eq('user_id', currentUser.id).eq('id', testRow.id);
+      console.log('   - Test row eliminada');
+    } else {
+      const errorText = await insertRes.text();
+      console.error('❌ POST /rest/v1/debts falló:', errorText);
+    }
+  } catch (e) {
+    console.error('❌ Error en POST /rest/v1/debts:', e);
+  }
+
+  // 5. Test de conexión GET /rest/v1/debts
+  try {
+    console.log('5. Probando GET /rest/v1/debts...');
+    const getRes = await fetch(`https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/debts?user_id=eq.${currentUser.id}&limit=5`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token.access_token}`
+      }
+    });
+
+    console.log('   - Respuesta GET:', getRes.status, getRes.statusText);
+    
+    if (getRes.ok) {
+      const getJson = await getRes.json();
+      console.log('   - Filas encontradas:', getJson.length);
+      console.log('✅ GET /rest/v1/debts funcionando');
+    } else {
+      const errorText = await getRes.text();
+      console.error('❌ GET /rest/v1/debts falló:', errorText);
+    }
+  } catch (e) {
+    console.error('❌ Error en GET /rest/v1/debts:', e);
+  }
+
+  console.log('=== FIN DIAGNÓSTICO ===');
+  alert('Diagnóstico completado - revisa la consola para detalles');
 }
