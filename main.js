@@ -181,7 +181,10 @@ function updateDashboard() {
   const personalized = userData.name ? `${greeting.slice(0,-1)} ${userData.name}!` : greeting;
 
   document.getElementById('welcomeMessage').textContent = personalized;
-  document.getElementById('headerGreeting').textContent = `📅 ${personalized}`;
+  document.getElementById('headerGreeting').textContent = `� Finanzas Personales`;
+  document.getElementById('headerSubtitle').textContent = userData.name ? 
+    `${personalized} Controla tus deudas y gastos` : 
+    'Controla tus deudas y gastos de forma inteligente';
   document.getElementById('currentDate').textContent = now.toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
   const totalOwed = debts.filter(d=>d.type==='owed').reduce((s,d)=>s+d.amount,0);
@@ -389,43 +392,77 @@ document.getElementById('owedForm')?.addEventListener('submit', async function(e
   const act = addActivity('finance', `${person} te debe $${amount.toFixed(2)}`, '💵');
   saveData(false);
 
-  // Cloud inmediato con logs detallados
+  // Cloud inmediato con logs detallados usando fetch (como el diagnóstico)
   if (currentUser) {
     try {
       console.log('[owedForm] intentando insertar deuda:', { user_id: currentUser.id, debt_id: debt.id });
       
-      const { data, error } = await supabase.from('debts').insert({
-        id: debt.id, 
-        user_id: currentUser.id, 
-        type: debt.type, 
-        person: debt.person,
-        amount: debt.amount, 
-        description: debt.description || null, 
-        date: debt.date, 
-        created: debt.created
-      }).select('id');
-      
-      if (error) {
-        console.error('[owedForm] insert debt error:', error);
-        alert(`Error al guardar en la nube: ${error.message}`);
-      } else {
-        console.log('[owedForm] deuda insertada correctamente:', data);
+      // Obtener token igual que en el diagnóstico
+      const token = JSON.parse(localStorage.getItem('sb-nkyfbgdcgunkwnboemqn-auth-token') || 'null');
+      if (!token?.access_token) {
+        console.error('[owedForm] Sin token de acceso');
+        alert('Sin token de acceso - intenta cerrar sesión y volver a entrar');
+        return;
       }
 
+      // Usar fetch directo como en el diagnóstico
+      const insertRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/debts', {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token.access_token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          id: debt.id,
+          user_id: currentUser.id,
+          type: debt.type,
+          person: debt.person,
+          amount: debt.amount,
+          description: debt.description || null,
+          date: debt.date,
+          created: debt.created
+        })
+      });
+
+      console.log('[owedForm] respuesta POST:', insertRes.status, insertRes.statusText);
+      
+      if (insertRes.ok) {
+        const insertJson = await insertRes.json();
+        console.log('[owedForm] deuda insertada correctamente:', insertJson);
+      } else {
+        const errorText = await insertRes.text();
+        console.error('[owedForm] error al insertar deuda:', errorText);
+        alert(`Error al guardar en la nube: ${errorText}`);
+      }
+
+      // Actividad también con fetch
       if (act) {
-        const { data: actData, error: aerr } = await supabase.from('activities').insert({
-          id: act.id, 
-          user_id: currentUser.id, 
-          type: act.type, 
-          text: act.text, 
-          icon: act.icon, 
-          time: act.time
-        }).select('id');
+        const actRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/activities', {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token.access_token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify({
+            id: act.id,
+            user_id: currentUser.id,
+            type: act.type,
+            text: act.text,
+            icon: act.icon,
+            time: act.time
+          })
+        });
         
-        if (aerr) {
-          console.warn('[owedForm] insert activity error:', aerr);
+        if (actRes.ok) {
+          const actJson = await actRes.json();
+          console.log('[owedForm] actividad insertada correctamente:', actJson);
         } else {
-          console.log('[owedForm] actividad insertada correctamente:', actData);
+          const actError = await actRes.text();
+          console.warn('[owedForm] error al insertar actividad:', actError);
         }
       }
     } catch (e) {
@@ -462,43 +499,77 @@ document.getElementById('oweForm')?.addEventListener('submit', async function(e)
   const act = addActivity('finance', `Debes $${amount.toFixed(2)} a ${person}`, '💸');
   saveData(false);
 
-  // Cloud inmediato con logs detallados
+  // Cloud inmediato con logs detallados usando fetch (como el diagnóstico)
   if (currentUser) {
     try {
       console.log('[oweForm] intentando insertar deuda:', { user_id: currentUser.id, debt_id: debt.id });
       
-      const { data, error } = await supabase.from('debts').insert({
-        id: debt.id, 
-        user_id: currentUser.id, 
-        type: debt.type, 
-        person: debt.person,
-        amount: debt.amount, 
-        description: debt.description || null, 
-        date: debt.date, 
-        created: debt.created
-      }).select('id');
-      
-      if (error) {
-        console.error('[oweForm] insert debt error:', error);
-        alert(`Error al guardar en la nube: ${error.message}`);
-      } else {
-        console.log('[oweForm] deuda insertada correctamente:', data);
+      // Obtener token igual que en el diagnóstico
+      const token = JSON.parse(localStorage.getItem('sb-nkyfbgdcgunkwnboemqn-auth-token') || 'null');
+      if (!token?.access_token) {
+        console.error('[oweForm] Sin token de acceso');
+        alert('Sin token de acceso - intenta cerrar sesión y volver a entrar');
+        return;
       }
 
+      // Usar fetch directo como en el diagnóstico
+      const insertRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/debts', {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token.access_token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          id: debt.id,
+          user_id: currentUser.id,
+          type: debt.type,
+          person: debt.person,
+          amount: debt.amount,
+          description: debt.description || null,
+          date: debt.date,
+          created: debt.created
+        })
+      });
+
+      console.log('[oweForm] respuesta POST:', insertRes.status, insertRes.statusText);
+      
+      if (insertRes.ok) {
+        const insertJson = await insertRes.json();
+        console.log('[oweForm] deuda insertada correctamente:', insertJson);
+      } else {
+        const errorText = await insertRes.text();
+        console.error('[oweForm] error al insertar deuda:', errorText);
+        alert(`Error al guardar en la nube: ${errorText}`);
+      }
+
+      // Actividad también con fetch
       if (act) {
-        const { data: actData, error: aerr } = await supabase.from('activities').insert({
-          id: act.id, 
-          user_id: currentUser.id, 
-          type: act.type, 
-          text: act.text, 
-          icon: act.icon, 
-          time: act.time
-        }).select('id');
+        const actRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/activities', {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${token.access_token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify({
+            id: act.id,
+            user_id: currentUser.id,
+            type: act.type,
+            text: act.text,
+            icon: act.icon,
+            time: act.time
+          })
+        });
         
-        if (aerr) {
-          console.warn('[oweForm] insert activity error:', aerr);
+        if (actRes.ok) {
+          const actJson = await actRes.json();
+          console.log('[oweForm] actividad insertada correctamente:', actJson);
         } else {
-          console.log('[oweForm] actividad insertada correctamente:', actData);
+          const actError = await actRes.text();
+          console.warn('[oweForm] error al insertar actividad:', actError);
         }
       }
     } catch (e) {
@@ -582,23 +653,39 @@ async function deleteDebt(id){
   if (!d) return;
   if (!confirm('¿Eliminar este registro?')) return;
 
-  // nube: borra fila con logs detallados
+  // nube: borra fila con logs detallados usando fetch
   if (currentUser) {
     try {
       console.log('[deleteDebt] intentando eliminar:', { user_id: currentUser.id, debt_id: id });
       
-      const { data, error } = await supabase.from('debts')
-        .delete()
-        .eq('user_id', currentUser.id)
-        .eq('id', id)
-        .select('id');
+      // Obtener token igual que en el diagnóstico
+      const token = JSON.parse(localStorage.getItem('sb-nkyfbgdcgunkwnboemqn-auth-token') || 'null');
+      if (!token?.access_token) {
+        console.error('[deleteDebt] Sin token de acceso');
+        alert('Sin token de acceso - intenta cerrar sesión y volver a entrar');
+        return;
+      }
+
+      // Usar fetch directo como en el diagnóstico
+      const deleteRes = await fetch(`https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/debts?user_id=eq.${currentUser.id}&id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token.access_token}`,
+          Prefer: 'return=representation'
+        }
+      });
         
-      if (error) {
-        console.error('[deleteDebt] delete error:', error);
-        alert(`Error al eliminar de la nube: ${error.message}`);
-        return; // No eliminar localmente si falló en la nube
+      console.log('[deleteDebt] respuesta DELETE:', deleteRes.status, deleteRes.statusText);
+      
+      if (deleteRes.ok) {
+        const deleteJson = await deleteRes.json();
+        console.log('[deleteDebt] eliminado correctamente de la nube:', deleteJson);
       } else {
-        console.log('[deleteDebt] eliminado correctamente de la nube:', data);
+        const errorText = await deleteRes.text();
+        console.error('[deleteDebt] error al eliminar:', errorText);
+        alert(`Error al eliminar de la nube: ${errorText}`);
+        return; // No eliminar localmente si falló en la nube
       }
     } catch (e) {
       console.error('[deleteDebt] error de conexión:', e);
@@ -613,19 +700,32 @@ async function deleteDebt(id){
 
   if (currentUser && act) {
     try {
-      const { data: actData, error: aerr } = await supabase.from('activities').insert({
-        id: act.id, 
-        user_id: currentUser.id, 
-        type: act.type, 
-        text: act.text, 
-        icon: act.icon, 
-        time: act.time
-      }).select('id');
+      // Actividad también con fetch
+      const token = JSON.parse(localStorage.getItem('sb-nkyfbgdcgunkwnboemqn-auth-token') || 'null');
+      const actRes = await fetch('https://nkyfbgdcgunkwnboemqn.supabase.co/rest/v1/activities', {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token.access_token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({
+          id: act.id,
+          user_id: currentUser.id,
+          type: act.type,
+          text: act.text,
+          icon: act.icon,
+          time: act.time
+        })
+      });
       
-      if (aerr) {
-        console.warn('[deleteDebt] insert activity error:', aerr);
+      if (actRes.ok) {
+        const actJson = await actRes.json();
+        console.log('[deleteDebt] actividad insertada correctamente:', actJson);
       } else {
-        console.log('[deleteDebt] actividad insertada correctamente:', actData);
+        const actError = await actRes.text();
+        console.warn('[deleteDebt] error al insertar actividad:', actError);
       }
     } catch (e) {
       console.warn('[deleteDebt] error al insertar actividad:', e);
@@ -645,13 +745,51 @@ async function saveUserName() {
   saveData(false);
 
   if (currentUser) {
-    const { error } = await supabase.from('user_profile').upsert({ user_id: currentUser.id, name });
-    if (error) console.warn('[saveUserName] upsert profile error:', error);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session?.data?.session?.access_token;
+      
+      if (!token) {
+        console.warn('[saveUserName] No hay token');
+        showMessage('Nombre guardado localmente (sin conexión)', 'warning');
+        return;
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          name: name,
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('[saveUserName] Error response:', response.status, errorData);
+        showMessage('Nombre guardado localmente (error en servidor)', 'warning');
+        return;
+      }
+
+      console.log('[saveUserName] Perfil actualizado en Supabase');
+      showMessage('Nombre guardado correctamente', 'success');
+    } catch (error) {
+      console.error('[saveUserName] Error:', error);
+      showMessage('Nombre guardado localmente (error de conexión)', 'warning');
+    }
+  } else {
+    showMessage('Nombre guardado localmente', 'success');
   }
 
-  showMessage('Nombre guardado correctamente', 'success');
   updateDashboard();
 }
+
 function loadUserName() { document.getElementById('userName').value = userData.name || ''; }
 
 function exportData() {
@@ -733,30 +871,81 @@ setInterval(updateDashboard, 60000);
 async function syncDownFromSupabase() {
   if (!currentUser) return;
 
-  const { data: remoteDebts, error: e1 } = await supabase
-    .from('debts').select('*').eq('user_id', currentUser.id)
-    .order('created', { ascending: false });
-  if (e1) { console.warn('[syncDown] debts error:', e1); return; }
+  try {
+    const session = await supabase.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    
+    if (!token) {
+      console.warn('[syncDown] No hay token');
+      return;
+    }
 
-  const { data: remoteActivities, error: e2 } = await supabase
-    .from('activities').select('*').eq('user_id', currentUser.id)
-    .order('time', { ascending: false }).limit(10);
-  if (e2) { console.warn('[syncDown] activities error:', e2); return; }
+    // Obtener deudas
+    const debtsResponse = await fetch(`${SUPABASE_URL}/rest/v1/debts?user_id=eq.${currentUser.id}&order=created.desc`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const { data: prof } = await supabase
-    .from('user_profile').select('name')
-    .eq('user_id', currentUser.id).maybeSingle();
+    let remoteDebts = [];
+    if (debtsResponse.ok) {
+      remoteDebts = await debtsResponse.json();
+    } else {
+      console.warn('[syncDown] Error al obtener deudas:', debtsResponse.status);
+    }
 
-  debts = (remoteDebts || []).map(d=>({
-    id:Number(d.id), type:d.type, person:d.person, amount:Number(d.amount),
-    description:d.description||'', date:d.date, created:new Date(d.created).toISOString()
-  }));
-  activities = (remoteActivities || []).map(a=>({
-    id:Number(a.id), type:a.type, text:a.text, icon:a.icon||'📋', time:new Date(a.time).toISOString()
-  }));
-  if (prof && prof.name) { userData.name = prof.name; loadUserName(); }
-  // No llamamos subida aquí.
-  console.log('[syncDown] ok →', { debts: debts.length, activities: activities.length, name: userData.name });
+    // Obtener actividades
+    const activitiesResponse = await fetch(`${SUPABASE_URL}/rest/v1/activities?user_id=eq.${currentUser.id}&order=time.desc&limit=10`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    let remoteActivities = [];
+    if (activitiesResponse.ok) {
+      remoteActivities = await activitiesResponse.json();
+    } else {
+      console.warn('[syncDown] Error al obtener actividades:', activitiesResponse.status);
+    }
+
+    // Obtener perfil de usuario
+    const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profile?user_id=eq.${currentUser.id}&select=name`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    let prof = null;
+    if (profileResponse.ok) {
+      const profiles = await profileResponse.json();
+      prof = profiles.length > 0 ? profiles[0] : null;
+    } else {
+      console.warn('[syncDown] Error al obtener perfil:', profileResponse.status);
+    }
+
+    // Actualizar datos locales
+    debts = (remoteDebts || []).map(d=>({
+      id:Number(d.id), type:d.type, person:d.person, amount:Number(d.amount),
+      description:d.description||'', date:d.date, created:new Date(d.created).toISOString()
+    }));
+    activities = (remoteActivities || []).map(a=>({
+      id:Number(a.id), type:a.type, text:a.text, icon:a.icon||'📋', time:new Date(a.time).toISOString()
+    }));
+    if (prof && prof.name) { userData.name = prof.name; loadUserName(); }
+    
+    console.log('[syncDown] ok →', { debts: debts.length, activities: activities.length, name: userData.name });
+  } catch (error) {
+    console.error('[syncDown] Error:', error);
+  }
 }
 
 // ======================= FUNCIÓN DE DIAGNÓSTICO =================

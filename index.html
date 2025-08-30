@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Agenda Personal</title>
+  <title>Finanzas Personales</title>
   <style>
     * {
       margin: 0;
@@ -402,20 +402,7 @@
       color: #27ae60;
     }
 
-    .activity-icon.task {
-      background: #e3f2fd;
-      color: #2196f3;
-    }
 
-    .activity-icon.contact {
-      background: #fff3e0;
-      color: #ff9800;
-    }
-
-    .activity-icon.note {
-      background: #f3e5f5;
-      color: #9c27b0;
-    }
 
     .activity-content {
       flex: 1;
@@ -726,15 +713,14 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1 id="headerGreeting">📅 ¡Hola!</h1>
-      <p id="headerSubtitle">Organiza tu vida financiera y personal</p>
+      <h1 id="headerGreeting">� Finanzas Personales</h1>
+      <p id="headerSubtitle">Controla tus deudas y gastos de forma inteligente</p>
     </div>
 
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
       <button class="nav-tab" onclick="showTab('finanzas', this)">💰 Finanzas</button>
-      <button class="nav-tab" onclick="showTab('tareas', this)">📝 Tareas</button>
-      <button class="nav-tab" onclick="showTab('notas', this)">📝 Notas</button>
+
       <button class="nav-tab" onclick="showTab('configuracion', this)">⚙️ Configuración</button>
     </div>
 
@@ -765,33 +751,7 @@
           <div class="card-footer"><span id="dashDebtCount">0 registros</span><span class="card-arrow">→</span></div>
         </div>
 
-        <div class="dashboard-card tasks-card" onclick="showTab('tareas', document.querySelectorAll('.nav-tab')[2])">
-          <div class="card-header">
-            <h3>📝 Tareas</h3>
-            <div class="card-icon">✅</div>
-          </div>
-          <div class="card-content">
-            <div class="metric"><span class="metric-value">0</span><span class="metric-label">Pendientes</span></div>
-            <div class="metric"><span class="metric-value">0</span><span class="metric-label">Completadas</span></div>
-            <div class="metric highlight"><span class="metric-value">0%</span><span class="metric-label">Progreso</span>
-            </div>
-          </div>
-          <div class="card-footer"><span>Próximamente</span><span class="card-arrow">→</span></div>
-        </div>
 
-        <div class="dashboard-card notes-card" onclick="showTab('notas', document.querySelectorAll('.nav-tab')[3])">
-          <div class="card-header">
-            <h3>📋 Notas</h3>
-            <div class="card-icon">📝</div>
-          </div>
-          <div class="card-content">
-            <div class="metric"><span class="metric-value">0</span><span class="metric-label">Notas</span></div>
-            <div class="metric"><span class="metric-value">0</span><span class="metric-label">Categorías</span></div>
-            <div class="metric highlight"><span class="metric-value">0</span><span class="metric-label">Favoritas</span>
-            </div>
-          </div>
-          <div class="card-footer"><span>Próximamente</span><span class="card-arrow">→</span></div>
-        </div>
       </div>
 
       <div class="recent-activity">
@@ -808,9 +768,7 @@
           <button class="quick-btn"
             onclick="showTab('finanzas', document.querySelectorAll('.nav-tab')[1]); document.getElementById('owePerson').focus();"><span
               class="quick-icon">💸</span><span>Registrar deuda</span></button>
-          <button class="quick-btn" onclick="showTab('tareas', document.querySelectorAll('.nav-tab')[2]);"><span
-              class="quick-icon">📝</span><span>Nueva tarea</span></button>
-          <button class="quick-btn" onclick="showTab('configuracion', document.querySelectorAll('.nav-tab')[4]);"><span
+          <button class="quick-btn" onclick="showTab('configuracion', document.querySelectorAll('.nav-tab')[2]);"><span
               class="quick-icon">⚙️</span><span>Configuración</span></button>
         </div>
       </div>
@@ -897,32 +855,7 @@
       </div>
     </div>
 
-    <div id="tareas" class="tab-content">
-      <h2 class="section-title">Gestión de Tareas</h2>
-      <div class="empty-state">
-        <div>📝</div>
-        <h3>Próximamente</h3>
-        <p>La sección de tareas estará disponible pronto</p>
-      </div>
-    </div>
 
-    <div id="contactos" class="tab-content">
-      <h2 class="section-title">Contactos</h2>
-      <div class="empty-state">
-        <div>👥</div>
-        <h3>Próximamente</h3>
-        <p>La sección de contactos estará disponible pronto</p>
-      </div>
-    </div>
-
-    <div id="notas" class="tab-content">
-      <h2 class="section-title">Notas Personales</h2>
-      <div class="empty-state">
-        <div>📋</div>
-        <h3>Próximamente</h3>
-        <p>La sección de notas estará disponible pronto</p>
-      </div>
-    </div>
 
     <div id="configuracion" class="tab-content">
       <h2 class="section-title">⚙️ Configuración</h2>
