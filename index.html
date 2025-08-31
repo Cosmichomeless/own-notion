@@ -1,939 +1,260 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finanzas Personales</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, .1);
-      overflow: hidden;
-    }
-
-    .header {
-      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-
-    .header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-
-    .header p {
-      opacity: .9;
-      font-size: 1.1rem;
-    }
-
-    .nav-tabs {
-      display: flex;
-      background: #f8f9fa;
-      border-bottom: 2px solid #e9ecef;
-    }
-
-    .nav-tab {
-      flex: 1;
-      padding: 20px;
-      text-align: center;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #6c757d;
-      transition: .3s;
-    }
-
-    .nav-tab.active {
-      background: white;
-      color: #2c3e50;
-      border-bottom: 3px solid #667eea;
-    }
-
-    .nav-tab:hover {
-      background: #e9ecef;
-    }
-
-    .tab-content {
-      display: none;
-      padding: 30px;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    .section-title {
-      font-size: 1.8rem;
-      color: #2c3e50;
-      margin-bottom: 25px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #667eea;
-    }
-
-    .finance-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      margin-bottom: 30px;
-    }
-
-    .card {
-      background: #f8f9fa;
-      border-radius: 10px;
-      padding: 25px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
-    }
-
-    .card h3 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      font-size: 1.3rem;
-    }
-
-    .input-group {
-      margin-bottom: 15px;
-    }
-
-    .input-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: #495057;
-    }
-
-    .input-group input,
-    .input-group select {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #e9ecef;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color .3s;
-    }
-
-    .input-group input:focus,
-    .input-group select:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, .1);
-    }
-
-    .btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 600;
-      transition: .3s;
-      width: 100%;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, .4);
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    }
-
-    .btn-danger:hover {
-      box-shadow: 0 5px 15px rgba(231, 76, 60, .4);
-    }
-
-    .btn-small {
-      padding: 8px 15px;
-      font-size: .9rem;
-      width: auto;
-    }
-
-    .debt-list {
-      margin-top: 20px;
-    }
-
-    .debt-item {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 15px;
-      border-left: 4px solid #667eea;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
-      transition: transform .3s;
-    }
-
-    .debt-item:hover {
-      transform: translateX(5px);
-    }
-
-    .debt-item.owe {
-      border-left-color: #e74c3c;
-    }
-
-    .debt-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .debt-person {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #2c3e50;
-    }
-
-    .debt-amount {
-      font-size: 1.2rem;
-      font-weight: 700;
-    }
-
-    .debt-amount.positive {
-      color: #27ae60;
-    }
-
-    .debt-amount.negative {
-      color: #e74c3c;
-    }
-
-    .debt-description {
-      color: #6c757d;
-      margin-bottom: 10px;
-    }
-
-    .debt-date {
-      font-size: .9rem;
-      color: #adb5bd;
-    }
-
-    .debt-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .summary {
-      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-      color: white;
-      border-radius: 10px;
-      padding: 25px;
-      margin-bottom: 30px;
-    }
-
-    .summary h3 {
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-    }
-
-    .summary-item {
-      text-align: center;
-    }
-
-    .summary-value {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .summary-label {
-      opacity: .9;
-      font-size: 1rem;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 50px;
-      color: #6c757d;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 25px;
-      margin-bottom: 40px;
-    }
-
-    .dashboard-card {
-      background: white;
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, .1);
-      cursor: pointer;
-      transition: .3s;
-      border: 2px solid transparent;
-    }
-
-    .dashboard-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, .15);
-      border-color: #667eea;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .card-header h3 {
-      color: #2c3e50;
-      font-size: 1.3rem;
-      margin: 0;
-    }
-
-    .card-icon {
-      font-size: 2rem;
-      opacity: .7;
-    }
-
-    .metric {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding: 8px 0;
-    }
-
-    .metric.highlight {
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-
-    .metric-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #2c3e50;
-    }
-
-    .metric-label {
-      color: #6c757d;
-      font-size: .9rem;
-    }
-
-    .card-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 15px;
-      border-top: 1px solid #e9ecef;
-      color: #6c757d;
-      font-size: .9rem;
-    }
-
-    .card-arrow {
-      font-size: 1.2rem;
-      color: #667eea;
-      font-weight: bold;
-    }
-
-    .recent-activity {
-      margin-bottom: 30px;
-    }
-
-    .recent-activity h3 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-    }
-
-    .activity-list {
-      background: #f8f9fa;
-      border-radius: 10px;
-      padding: 20px;
-      min-height: 120px;
-    }
-
-    .activity-item {
-      display: flex;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #e9ecef;
-    }
-
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-
-    .activity-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 15px;
-      font-size: 1.2rem;
-    }
-
-    .activity-icon.finance {
-      background: #e8f5e8;
-      color: #27ae60;
-    }
-
-
-
-    .activity-content {
-      flex: 1;
-    }
-
-    .activity-text {
-      color: #2c3e50;
-      font-weight: 500;
-    }
-
-    .activity-time {
-      color: #6c757d;
-      font-size: .8rem;
-    }
-
-    .quick-actions h3 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      font-size: 1.5rem;
-    }
-
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-    }
-
-    .quick-btn {
-      background: white;
-      border: 2px solid #e9ecef;
-      border-radius: 10px;
-      padding: 20px;
-      cursor: pointer;
-      transition: .3s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 10px;
-    }
-
-    .quick-btn:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-      transform: translateY(-2px);
-    }
-
-    .quick-icon {
-      font-size: 2rem;
-      margin-bottom: 5px;
-    }
-
-    .view-toggle {
-      margin-bottom: 25px;
-      padding: 20px;
-      background: #f8f9fa;
-      border-radius: 10px;
-    }
-
-    .view-toggle h3 {
-      margin-bottom: 15px;
-      color: #2c3e50;
-    }
-
-    .toggle-buttons {
-      display: flex;
-      gap: 10px;
-    }
-
-    .toggle-btn {
-      background: white;
-      border: 2px solid #e9ecef;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: .3s;
-    }
-
-    .toggle-btn:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-    }
-
-    .toggle-btn.active {
-      background: #667eea;
-      color: white;
-      border-color: #667eea;
-    }
-
-    .person-card {
-      background: white;
-      border-radius: 12px;
-      padding: 25px;
-      margin-bottom: 20px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
-      border-left: 4px solid #667eea;
-    }
-
-    .person-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #e9ecef;
-    }
-
-    .person-name {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #2c3e50;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .person-balance {
-      font-size: 1.3rem;
-      font-weight: 700;
-      padding: 8px 16px;
-      border-radius: 20px;
-    }
-
-    .person-balance.positive {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .person-balance.negative {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .person-balance.neutral {
-      background: #e2e3e5;
-      color: #383d41;
-    }
-
-    .person-transactions {
-      display: grid;
-      gap: 15px;
-    }
-
-    .transaction-item {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-      border-left: 3px solid transparent;
-    }
-
-    .transaction-item.owed {
-      border-left-color: #28a745;
-    }
-
-    .transaction-item.owe {
-      border-left-color: #dc3545;
-    }
-
-    .transaction-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .transaction-amount {
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    .transaction-amount.positive {
-      color: #28a745;
-    }
-
-    .transaction-amount.negative {
-      color: #dc3545;
-    }
-
-    .transaction-description {
-      color: #6c757d;
-      margin-bottom: 5px;
-    }
-
-    .transaction-date {
-      font-size: .85rem;
-      color: #adb5bd;
-    }
-
-    .person-actions {
-      margin-top: 15px;
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .btn-settle {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: .9rem;
-      font-weight: 600;
-      transition: .3s;
-    }
-
-    .btn-settle:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 10px rgba(40, 167, 69, .4);
-    }
-
-    .config-section {
-      margin-bottom: 40px;
-    }
-
-    .config-section h3 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-      font-size: 1.4rem;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e9ecef;
-    }
-
-    .data-management {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 25px;
-    }
-
-    .data-management .card h4 {
-      color: #2c3e50;
-      margin-bottom: 10px;
-      font-size: 1.1rem;
-    }
-
-    .data-management .card p {
-      color: #6c757d;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-    }
-
-    .info-item {
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border-left: 3px solid #667eea;
-    }
-
-    .info-item strong {
-      display: block;
-      color: #2c3e50;
-      margin-bottom: 5px;
-    }
-
-    .success-message {
-      background: #d4edda;
-      color: #155724;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
-      border-left: 4px solid #28a745;
-      display: none;
-    }
-
-    .error-message {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
-      border-left: 4px solid #dc3545;
-      display: none;
-    }
-
-    @media (max-width:768px) {
-      .finance-section {
-        grid-template-columns: 1fr;
-      }
-
-      .nav-tab {
-        padding: 15px 10px;
-        font-size: 1rem;
-      }
-
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .actions-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzApp - Control de Deudas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-
 <body>
-  <div class="container">
-    <div class="header">
-      <h1 id="headerGreeting">� Finanzas Personales</h1>
-      <p id="headerSubtitle">Controla tus deudas y gastos de forma inteligente</p>
-    </div>
-
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('dashboard', this)">🏠 Dashboard</button>
-      <button class="nav-tab" onclick="showTab('finanzas', this)">💰 Finanzas</button>
-
-      <button class="nav-tab" onclick="showTab('configuracion', this)">⚙️ Configuración</button>
-    </div>
-
-    <div id="dashboard" class="tab-content active">
-      <h2 class="section-title">📊 Dashboard Principal</h2>
-      <div class="card"
-        style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; padding:30px; border-radius:15px; text-align:center; box-shadow:0 10px 30px rgba(102,126,234,.3);">
-        <h2 id="welcomeMessage">¡Buen día!</h2>
-        <p id="currentDate"></p>
-        <p>Tu agenda personal te da la bienvenida</p>
-      </div>
-
-      <div class="dashboard-grid">
-        <div class="dashboard-card finance-card"
-          onclick="showTab('finanzas', document.querySelectorAll('.nav-tab')[1])">
-          <div class="card-header">
-            <h3>💰 Finanzas</h3>
-            <div class="card-icon">💳</div>
-          </div>
-          <div class="card-content">
-            <div class="metric"><span class="metric-value" id="dashTotalOwed">$0</span><span class="metric-label">Me
-                deben</span></div>
-            <div class="metric"><span class="metric-value" id="dashTotalOwe">$0</span><span
-                class="metric-label">Debo</span></div>
-            <div class="metric highlight"><span class="metric-value" id="dashNetBalance">$0</span><span
-                class="metric-label">Balance neto</span></div>
-          </div>
-          <div class="card-footer"><span id="dashDebtCount">0 registros</span><span class="card-arrow">→</span></div>
-        </div>
-
-
-      </div>
-
-      <div class="recent-activity">
-        <h3>🕒 Actividad Reciente</h3>
-        <div id="recentActivityList" class="activity-list"></div>
-      </div>
-
-      <div class="quick-actions">
-        <h3>⚡ Acciones Rápidas</h3>
-        <div class="actions-grid">
-          <button class="quick-btn"
-            onclick="showTab('finanzas', document.querySelectorAll('.nav-tab')[1]); document.getElementById('owedPerson').focus();"><span
-              class="quick-icon">💵</span><span>Registrar que me deben</span></button>
-          <button class="quick-btn"
-            onclick="showTab('finanzas', document.querySelectorAll('.nav-tab')[1]); document.getElementById('owePerson').focus();"><span
-              class="quick-icon">💸</span><span>Registrar deuda</span></button>
-          <button class="quick-btn" onclick="showTab('configuracion', document.querySelectorAll('.nav-tab')[2]);"><span
-              class="quick-icon">⚙️</span><span>Configuración</span></button>
-        </div>
-      </div>
-    </div>
-
-    <div id="finanzas" class="tab-content">
-      <h2 class="section-title">Gestión Financiera</h2>
-      <div class="summary">
-        <h3>📊 Resumen Financiero</h3>
-        <div class="summary-grid">
-          <div class="summary-item">
-            <div class="summary-value" id="totalOwed">$0</div>
-            <div class="summary-label">Me deben</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value" id="totalOwe">$0</div>
-            <div class="summary-label">Debo</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-value" id="netBalance">$0</div>
-            <div class="summary-label">Balance neto</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="finance-section">
-        <div class="card">
-          <h3>💵 Me deben</h3>
-          <form id="owedForm">
-            <div class="input-group">
-              <label for="owedPerson">Persona:</label>
-              <input type="text" id="owedPerson" list="owedPersonsList" required
-                placeholder="Escribe o selecciona una persona">
-              <datalist id="owedPersonsList"></datalist>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-wallet"></i>
+                <h1>FinanzApp</h1>
             </div>
-            <div class="input-group"><label for="owedAmount">Cantidad:</label><input type="number" id="owedAmount"
-                step="0.01" required></div>
-            <div class="input-group"><label for="owedDescription">Descripción:</label><input type="text"
-                id="owedDescription" placeholder="Motivo del préstamo"></div>
-            <div class="input-group"><label for="owedDate">Fecha:</label><input type="date" id="owedDate" required>
+            <div class="auth-section">
+                <div id="authStatus" class="auth-status">Sin sesión</div>
+                <button id="btnLogout" class="btn-logout" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
             </div>
-            <button type="submit" class="btn">Agregar</button>
-          </form>
         </div>
+    </header>
 
-        <div class="card">
-          <h3>💸 Debo</h3>
-          <form id="oweForm">
-            <div class="input-group">
-              <label for="owePerson">Persona:</label>
-              <input type="text" id="owePerson" list="owePersonsList" required
-                placeholder="Escribe o selecciona una persona">
-              <datalist id="owePersonsList"></datalist>
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Pantalla de Login -->
+            <div id="loginScreen" class="login-screen">
+                <div class="login-card">
+                    <div class="login-header">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <h2>Bienvenido a FinanzApp</h2>
+                        <p>Controla quién te debe dinero de forma sencilla</p>
+                    </div>
+                    <div class="login-form">
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input 
+                                type="email" 
+                                id="authEmail" 
+                                placeholder="tu@email.com"
+                                class="email-input"
+                            >
+                        </div>
+                        <button id="btnLogin" class="btn-login">
+                            <i class="fas fa-paper-plane"></i>
+                            Enviar enlace mágico
+                        </button>
+                        <p class="login-help">
+                            Te enviaremos un enlace de acceso por email. No necesitas contraseña.
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div class="input-group"><label for="oweAmount">Cantidad:</label><input type="number" id="oweAmount"
-                step="0.01" required></div>
-            <div class="input-group"><label for="oweDescription">Descripción:</label><input type="text"
-                id="oweDescription" placeholder="Motivo de la deuda"></div>
-            <div class="input-group"><label for="oweDate">Fecha:</label><input type="date" id="oweDate" required></div>
-            <button type="submit" class="btn">Agregar</button>
-          </form>
-        </div>
-      </div>
 
-      <div class="people-view">
-        <div class="view-toggle">
-          <h3>📊 Vista de Datos</h3>
-          <div class="toggle-buttons">
-            <button class="toggle-btn active" onclick="toggleView('list')" id="listViewBtn">📋 Lista Completa</button>
-            <button class="toggle-btn" onclick="toggleView('people')" id="peopleViewBtn">👥 Por Personas</button>
-          </div>
-        </div>
-      </div>
+            <!-- Pantalla Principal (Dashboard) -->
+            <div id="appScreen" class="app-screen" style="display: none;">
+                
+                <!-- Navegación -->
+                <nav class="nav-tabs">
+                    <button class="nav-tab active" onclick="showTab('dashboard', this)">
+                        <i class="fas fa-chart-pie"></i> Dashboard
+                    </button>
+                    <button class="nav-tab" onclick="showTab('debts', this)">
+                        <i class="fas fa-list"></i> Deudas
+                    </button>
+                    <button class="nav-tab" onclick="showTab('people', this)">
+                        <i class="fas fa-users"></i> Personas
+                    </button>
+                    <button class="nav-tab" onclick="showTab('profile', this)">
+                        <i class="fas fa-user-cog"></i> Perfil
+                    </button>
+                </nav>
 
-      <div class="debt-list">
-        <div id="listView">
-          <h3>📋 Lista de Deudas y Préstamos</h3>
-          <div id="debtsList"></div>
+                <!-- Tab Dashboard -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="dashboard-grid">
+                        
+                        <!-- Resumen -->
+                        <div class="summary-card">
+                            <h3><i class="fas fa-chart-line"></i> Resumen</h3>
+                            <div class="summary-stats">
+                                <div class="stat">
+                                    <span class="stat-value" id="totalOwed">$0</span>
+                                    <span class="stat-label">Total me deben</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="totalDebts">0</span>
+                                    <span class="stat-label">Deudas activas</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="totalPeople">0</span>
+                                    <span class="stat-label">Personas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agregar Deuda Rápida -->
+                        <div class="quick-add-card">
+                            <h3><i class="fas fa-plus-circle"></i> Agregar Deuda</h3>
+                            <form id="quickDebtForm" class="quick-form">
+                                <div class="form-row">
+                                    <input type="text" id="quickPersonName" placeholder="Nombre de la persona" required>
+                                    <input type="number" id="quickAmount" placeholder="Cantidad" step="0.01" required>
+                                </div>
+                                <div class="form-row">
+                                    <input type="text" id="quickDescription" placeholder="Descripción (opcional)">
+                                    <input type="date" id="quickDueDate">
+                                </div>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-plus"></i> Agregar
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Deudas Recientes -->
+                        <div class="recent-debts-card">
+                            <h3><i class="fas fa-clock"></i> Deudas Recientes</h3>
+                            <div id="recentDebtsList" class="recent-list">
+                                <!-- Se llena dinámicamente -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Tab Deudas -->
+                <div id="debts" class="tab-content">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list"></i> Todas las Deudas</h2>
+                        <button id="btnAddDebt" class="btn-primary">
+                            <i class="fas fa-plus"></i> Nueva Deuda
+                        </button>
+                    </div>
+                    
+                    <!-- Filtros -->
+                    <div class="filters">
+                        <select id="filterStatus" class="filter-select">
+                            <option value="all">Todas las deudas</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="paid">Pagadas</option>
+                        </select>
+                        <input type="text" id="filterPerson" placeholder="Filtrar por persona..." class="filter-input">
+                    </div>
+
+                    <!-- Lista de Deudas -->
+                    <div id="debtsList" class="debts-list">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Tab Personas -->
+                <div id="people" class="tab-content">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users"></i> Resumen por Personas</h2>
+                    </div>
+                    <div id="peopleList" class="people-list">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Tab Perfil -->
+                <div id="profile" class="tab-content">
+                    <div class="section-header">
+                        <h2><i class="fas fa-user-cog"></i> Mi Perfil</h2>
+                    </div>
+                    <div class="profile-card">
+                        <form id="profileForm" class="profile-form">
+                            <div class="input-group">
+                                <label for="userName">Nombre</label>
+                                <input type="text" id="userName" placeholder="Tu nombre">
+                            </div>
+                            <div class="input-group">
+                                <label for="userEmail">Email</label>
+                                <input type="email" id="userEmail" readonly>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </form>
+                        
+                        <div class="data-management">
+                            <h3>Gestión de Datos</h3>
+                            <div class="data-buttons">
+                                <button id="btnExportData" class="btn-secondary">
+                                    <i class="fas fa-download"></i> Exportar Datos
+                                </button>
+                                <button id="btnSyncData" class="btn-secondary">
+                                    <i class="fas fa-sync"></i> Sincronizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <div id="peopleView" style="display:none;">
-          <h3>👥 Resumen por Personas</h3>
-          <div id="peopleList"></div>
+    </main>
+
+    <!-- Modal para agregar/editar deuda -->
+    <div id="debtModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Agregar Deuda</h3>
+                <button class="modal-close" onclick="closeDebtModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="debtForm" class="modal-form">
+                <input type="hidden" id="debtId">
+                
+                <div class="input-group">
+                    <label for="personName">Persona *</label>
+                    <input type="text" id="personName" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="amount">Cantidad *</label>
+                    <input type="number" id="amount" step="0.01" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" rows="3"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="dueDate">Fecha límite</label>
+                    <input type="date" id="dueDate">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" onclick="closeDebtModal()" class="btn-secondary">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
 
-
-
-    <div id="configuracion" class="tab-content">
-      <h2 class="section-title">⚙️ Configuración</h2>
-
-      <div class="config-section">
-        <h3>👤 Información Personal</h3>
-        <div class="card">
-          <div class="input-group"><label for="userName">Tu nombre:</label><input type="text" id="userName"
-              placeholder="Ingresa tu nombre"></div>
-          <button class="btn" onclick="saveUserName()">Guardar Nombre</button>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Cargando...</p>
         </div>
-      </div>
-
-      <div class="config-section">
-        <h3>🔐 Sesión</h3>
-        <div class="card">
-          <div class="input-group">
-            <label for="authEmail">Tu email (magic link):</label>
-            <input type="email" id="authEmail" placeholder="tucorreo@ejemplo.com">
-          </div>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="btnLogin">Entrar / Enviarme enlace</button>
-            <button class="btn btn-danger" id="btnLogout" style="display:none;">Cerrar sesión</button>
-          </div>
-          <p id="authStatus" style="margin-top:10px; color:#6c757d;">Sin sesión</p>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <h3>💾 Gestión de Datos</h3>
-        <div class="data-management">
-          <div class="card">
-            <h4>🔄 Sincronización</h4>
-            <p>Fuerza la sincronización de datos con la nube.</p>
-            <button class="btn" id="btnSync">🔄 Forzar sincronización</button>
-            <p id="syncStatus" style="margin-top:10px; color:#6c757d; font-size:0.9rem;">Listo para sincronizar</p>
-          </div>
-          <div class="card">
-            <h4>🔧 Diagnóstico</h4>
-            <p>Verificar conexión y autenticación con Supabase.</p>
-            <button class="btn" id="btnDiagnose">🔍 Ejecutar diagnóstico</button>
-          </div>
-          <div class="card">
-            <h4>📤 Exportar Datos</h4>
-            <p>Descarga todos tus datos en formato JSON para hacer respaldo.</p>
-            <button class="btn" onclick="exportData()">📥 Descargar Datos (JSON)</button>
-          </div>
-          <div class="card">
-            <h4>📥 Importar Datos</h4>
-            <p>Carga un archivo JSON con tus datos previamente guardados.</p>
-            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
-            <button class="btn" onclick="document.getElementById('importFile').click()">📤 Cargar Datos (JSON)</button>
-          </div>
-          <div class="card" style="border-left:4px solid #e74c3c;">
-            <h4>🗑️ Limpiar Datos</h4>
-            <p>Elimina todos los datos almacenados. <strong>Esta acción no se puede deshacer.</strong></p>
-            <button class="btn btn-danger" onclick="clearAllData()">⚠️ Eliminar Todos los Datos</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <h3>ℹ️ Información</h3>
-        <div class="card">
-          <div class="info-grid">
-            <div class="info-item"><strong>Versión:</strong> <span id="appVersion">—</span></div>
-            <div class="info-item"><strong>Total de registros:</strong> <span id="totalRecords">0</span></div>
-            <div class="info-item"><strong>Espacio utilizado:</strong> <span id="storageUsed">0 KB</span></div>
-            <div class="info-item"><strong>Última actividad:</strong> <span id="lastActivity">Nunca</span></div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Supabase SDK + tu script -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="main.js?v=login-v8-post-instant"></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
 </body>
-
 </html>

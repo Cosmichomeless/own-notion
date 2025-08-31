@@ -1,0 +1,21 @@
+{
+  "name": "finanzapp",
+  "version": "1.0.0",
+  "description": "Aplicación web para control de deudas con Supabase",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build process needed for static app'",
+    "deploy": "echo 'Deploy to your preferred static hosting'"
+  },
+  "keywords": [
+    "finanzas",
+    "deudas",
+    "supabase",
+    "javascript",
+    "webapp"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

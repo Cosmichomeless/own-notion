@@ -1,183 +1,170 @@
-# 💰 Finanzas Personales - Aplicación Web
+# FinanzApp - Control de Deudas
 
-Una aplicación web moderna para gestionar tus deudas y gastos personales, con almacenamiento local y sincronización en la nube usando Supabase.
+Una aplicación web moderna para controlar quién te debe dinero, con autenticación Magic Link de Supabase y persistencia en la nube.
 
-## ✨ Características
+## 🚀 Características
 
-- **Gestión de Deudas**: Registra quién te debe dinero y a quién le debes
-- **Resumen Financiero**: Visualiza tu balance neto al instante
-- **Vista por Personas**: Agrupa todas las deudas por persona
-- **Almacenamiento Local**: Funciona sin conexión usando localStorage
-- **Sincronización en la Nube**: Backup automático con Supabase
-- **Autenticación**: Login seguro con magic links por email
-- **Actividad Reciente**: Historial de todas tus operaciones
-- **Exportar/Importar**: Respalda tus datos en formato JSON
+- **Autenticación sin contraseñas**: Magic Link de Supabase
+- **Gestión de deudas**: Agregar, editar, marcar como pagadas y eliminar
+- **Dashboard intuitivo**: Resumen visual de tus finanzas
+- **Filtros avanzados**: Por estado y persona
+- **Responsive**: Diseño adaptable a móviles y desktop
+- **Persistencia en la nube**: Todos los datos se sincronizan automáticamente
+- **Exportación de datos**: Descarga tu información en JSON
 
-## 🚀 Instalación y Configuración
+## 📁 Estructura del Proyecto
+
+```
+/
+├── index.html          # Estructura HTML principal
+├── styles.css          # Estilos CSS modernos y responsivos
+├── app.js             # Lógica JavaScript de la aplicación
+├── supabase_schema.sql # Schema SQL para Supabase
+└── README_FINANZAS.md  # Documentación del proyecto
+```
+
+## 🛠️ Configuración
 
 ### 1. Configurar Supabase
 
-1. Ve a [supabase.com](https://supabase.com) y crea una cuenta
-2. Crea un nuevo proyecto
-3. Ve al SQL Editor en tu proyecto de Supabase
-4. Copia y pega todo el contenido del archivo `supabase_schema.sql`
-5. Ejecuta el script completo
-6. Ve a Settings > API para obtener tu URL y anon key
-
-**IMPORTANTE**: El script incluye:
-- Creación automática de perfil de usuario al registrarse
-- Migración para usuarios existentes sin perfil
-- Políticas de seguridad RLS
-- Índices optimizados para rendimiento
-
-### 2. Configurar la Aplicación
-
-1. Abre el archivo `main.js`
-2. Busca las líneas que contienen:
+1. Crea un proyecto en [Supabase](https://supabase.com)
+2. Ve al SQL Editor y ejecuta el contenido de `supabase_schema.sql`
+3. Actualiza las credenciales en `app.js`:
    ```javascript
-   const SUPABASE_URL = "https://tu-proyecto.supabase.co";
-   const SUPABASE_ANON_KEY = "tu-anon-key-aqui";
+   const SUPABASE_URL = "tu-url-de-supabase";
+   const SUPABASE_ANON_KEY = "tu-clave-anonima";
    ```
-3. Reemplaza con los valores de tu proyecto de Supabase
+
+### 2. Configurar autenticación
+
+1. En tu proyecto Supabase, ve a Authentication > Settings
+2. Configura la URL del sitio (Site URL)
+3. Agrega tu dominio a las URLs permitidas (Redirect URLs)
 
 ### 3. Desplegar
 
-Puedes usar la aplicación de varias formas:
+Puedes desplegar la aplicación en cualquier hosting estático:
+- GitHub Pages
+- Netlify
+- Vercel
+- Firebase Hosting
 
-#### Opción A: GitHub Pages
-1. Sube los archivos a un repositorio de GitHub
-2. Activa GitHub Pages
-3. Accede desde `https://tu-usuario.github.io/tu-repo`
+## 📊 Base de Datos
 
-#### Opción B: Servidor Local
-1. Usa cualquier servidor HTTP simple:
-   ```bash
-   # Python
-   python -m http.server 8000
-   
-   # Node.js
-   npx serve .
-   
-   # PHP
-   php -S localhost:8000
-   ```
+### Tablas
 
-#### Opción C: Netlify/Vercel
-1. Arrastra la carpeta completa a Netlify o Vercel
-2. Se desplegará automáticamente
+#### `user_profiles`
+- `id` (UUID): ID del usuario (FK a auth.users)
+- `name` (TEXT): Nombre del usuario
+- `created_at`, `updated_at` (TIMESTAMP)
 
-## 📋 Uso de la Aplicación
+#### `debts`
+- `id` (UUID): ID único de la deuda
+- `user_id` (UUID): ID del usuario propietario
+- `person_name` (TEXT): Nombre de la persona que debe
+- `amount` (DECIMAL): Cantidad de dinero
+- `description` (TEXT): Descripción opcional
+- `date_created` (TIMESTAMP): Fecha de creación
+- `date_due` (TIMESTAMP): Fecha límite de pago
+- `is_paid` (BOOLEAN): Estado de la deuda
+- `created_at`, `updated_at` (TIMESTAMP)
 
-### Primera Vez
-1. Abre la aplicación en tu navegador
-2. Ve a la pestaña "Configuración"
-3. Ingresa tu email y haz clic en "Entrar / Enviarme enlace"
-4. Revisa tu email (incluye spam) y haz clic en el enlace
-5. Configura tu nombre en la sección de información personal
+### Seguridad (RLS)
 
-### Registrar Deudas
-1. Ve a la pestaña "Finanzas"
-2. Usa el formulario "Me deben" para registrar dinero que te deben
-3. Usa el formulario "Debo" para registrar dinero que debes
-4. Completa todos los campos y haz clic en "Registrar"
+La aplicación utiliza Row Level Security (RLS) para garantizar que:
+- Los usuarios solo puedan ver y modificar sus propios datos
+- No hay acceso cruzado entre usuarios
+- Los datos están protegidos a nivel de base de datos
 
-### Ver Resumen
-- El dashboard principal muestra tu balance total
-- "Me deben": Total de dinero que te deben
-- "Debo": Total de dinero que debes
-- "Balance neto": Diferencia entre ambos (verde si es positivo, rojo si es negativo)
+## 💻 Funcionalidades
 
-### Vista por Personas
-- Ve a la pestaña "Personas" para ver las deudas agrupadas por persona
-- Cada persona muestra el balance total contigo
-- Verde: Te debe dinero neto
-- Rojo: Le debes dinero neto
+### Dashboard
+- Resumen total de dinero pendiente
+- Número de deudas activas
+- Contador de personas únicas
+- Lista de deudas recientes
+- Formulario de agregar deuda rápida
 
-## 🛠️ Funciones Avanzadas
+### Gestión de Deudas
+- Lista completa de todas las deudas
+- Filtros por estado (pendientes/pagadas) y persona
+- Marcar deudas como pagadas/pendientes
+- Editar información de deudas existentes
+- Eliminar deudas (con confirmación)
 
-### Exportar Datos
-1. Ve a Configuración
-2. Haz clic en "Exportar datos JSON"
-3. Se descargará un archivo con todos tus datos
+### Vista de Personas
+- Resumen agrupado por persona
+- Total adeudado por cada persona
+- Número de deudas activas y totales
+- Fecha de última actividad
 
-### Importar Datos
-1. Ve a Configuración
-2. Haz clic en "Importar datos JSON"
-3. Selecciona un archivo previamente exportado
+### Perfil de Usuario
+- Editar nombre del usuario
+- Exportar todos los datos en JSON
+- Sincronización manual con la nube
+- Información de la cuenta
 
-### Limpiar Datos
-1. Ve a Configuración
-2. Haz clic en "Limpiar todos los datos"
-3. Confirma la acción (no se puede deshacer)
+## 🎨 Diseño
 
-### Diagnóstico
-1. Ve a Configuración
-2. Haz clic en "Ejecutar diagnóstico"
-3. Revisa la consola para información detallada sobre la conexión
+La aplicación utiliza:
+- Variables CSS para un tema consistente
+- Diseño responsive mobile-first
+- Iconos de Font Awesome
+- Animaciones suaves y transiciones
+- Paleta de colores moderna
+- Typography system escalable
 
-## 🔧 Estructura del Proyecto
+## 🔐 Autenticación
 
-```
-finanzas-personales/
-├── index.html          # Interfaz principal
-├── main.js             # Lógica de la aplicación
-├── supabase_schema.sql # Esquema de la base de datos
-└── README.md           # Este archivo
-```
+### Magic Link Flow
+1. Usuario ingresa su email
+2. Supabase envía un enlace mágico
+3. Usuario hace click en el enlace
+4. Sesión se establece automáticamente
+5. Datos se cargan desde la nube
 
-## 🔒 Seguridad y Privacidad
+### Persistencia de Sesión
+- Las sesiones se mantienen entre recargas
+- Auto-refresh de tokens
+- Detección automática de cambios de autenticación
 
-- **RLS (Row Level Security)**: Cada usuario solo puede ver sus propios datos
-- **Autenticación JWT**: Tokens seguros para la comunicación con Supabase
-- **Magic Links**: No hay contraseñas que recordar o hackear
-- **HTTPS**: Toda la comunicación está encriptada
-- **Almacenamiento Local**: Los datos se guardan en tu navegador
+## 📱 Responsive Design
 
-## 🔍 Solución de Problemas
+La aplicación es completamente responsive:
+- **Mobile**: Navegación apilada, formularios de una columna
+- **Tablet**: Grid adaptativo, formularios de dos columnas
+- **Desktop**: Layout completo, todas las funcionalidades visibles
 
-### No puedo hacer login
-1. Verifica que hayas configurado correctamente SUPABASE_URL y SUPABASE_ANON_KEY
-2. Revisa tu email (incluye spam)
-3. Asegúrate de que tu proyecto de Supabase esté activo
+## 🚀 Desarrollo Local
 
-### No se sincronizan los datos
-1. Verifica tu conexión a internet
-2. Ve a Configuración > Diagnóstico para ver errores
-3. Revisa la consola del navegador (F12)
+1. Clona el repositorio
+2. Configura las credenciales de Supabase
+3. Abre `index.html` en un servidor local
+4. ¡Listo para desarrollar!
 
-### No aparece mi nombre al iniciar sesión en otro dispositivo
-1. La aplicación crea automáticamente un perfil con tu email como nombre base
-2. Si cambias tu nombre en un dispositivo, se sincronizará automáticamente
-3. Usa el diagnóstico para verificar que el perfil de usuario existe
+## 📝 Próximas Funcionalidades
 
-### Los datos no persisten entre dispositivos
-1. Asegúrate de estar logueado con el mismo email en ambos dispositivos
-2. Verifica que la sincronización esté funcionando (ve a Diagnóstico)
-3. Los datos se sincronizan automáticamente al iniciar sesión
-
-### Perdí mis datos
-1. Si tenías sincronización activa, haz login de nuevo
-2. Si tienes un backup JSON, usa la función de importar
-3. Los datos locales se mantienen en localStorage del navegador
+- [ ] Notificaciones por email para deudas vencidas
+- [ ] Categorías de deudas
+- [ ] Gráficos y estadísticas avanzadas
+- [ ] Recordatorios programados
+- [ ] Importación desde CSV/Excel
+- [ ] Modo oscuro
+- [ ] PWA (Progressive Web App)
 
 ## 🤝 Contribuir
 
-¿Encontraste un bug o tienes una sugerencia? ¡Genial!
-
-1. Abre un issue describiendo el problema
-2. Si quieres contribuir código, haz un fork y envía un pull request
-3. Asegúrate de probar tus cambios antes de enviar
+Las contribuciones son bienvenidas. Por favor:
+1. Fork el proyecto
+2. Crea una rama para tu feature
+3. Commit tus cambios
+4. Push a la rama
+5. Abre un Pull Request
 
 ## 📄 Licencia
 
-Este proyecto es de código abierto. Puedes usarlo, modificarlo y distribuirlo libremente.
-
-## 🙏 Agradecimientos
-
-- [Supabase](https://supabase.com) por el backend as a service
-- [Font Awesome](https://fontawesome.com) por los iconos (si se usan)
-- La comunidad de desarrolladores por las mejores prácticas
+Este proyecto está bajo la Licencia MIT - ver el archivo LICENSE para detalles.
 
 ---
 
-**¡Disfruta gestionando tus finanzas de forma inteligente! 💰**
+**FinanzApp** - Controla tus finanzas de manera simple y eficiente 💰

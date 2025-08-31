@@ -1,1 +1,0 @@
-#Crear una pagina web para almacenar todos los gastos que tengo (deudas, pagas etc) asi lo tengo todo almacenado ahi y asi poder 
